@@ -153,6 +153,31 @@ h1 {
     display: block;
 }
 
+/* Claw prong smooth animation */
+.claw-prong {
+    transition: transform 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+#claw-glow {
+    transition: opacity 0.3s ease;
+    animation: clawGlowSpin 3s linear infinite;
+}
+
+@keyframes clawGlowSpin {
+    0% { stroke-dashoffset: 0; }
+    100% { stroke-dashoffset: 24; }
+}
+
+#claw-motor-light {
+    transition: fill 0.2s ease, opacity 0.2s ease;
+    animation: motorPulse 2s ease-in-out infinite;
+}
+
+@keyframes motorPulse {
+    0%, 100% { opacity: 0.3; }
+    50% { opacity: 0.8; }
+}
+
 .glass-box {
     position: relative;
     width: 100%;

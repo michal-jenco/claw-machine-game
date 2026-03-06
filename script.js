@@ -577,21 +577,37 @@ function moveClaw(direction) {
 // Cached DOM references for hot-path elements
 let _clawAssembly = null;
 let _clawArm = null;
+let _topMotorRing = null;
+let _topMotorDot = null;
+let _topConnector = null;
 
 function getCachedClawElements() {
     if (!_clawAssembly) _clawAssembly = document.getElementById('claw-assembly');
     if (!_clawArm) _clawArm = document.getElementById('claw-arm');
+    if (!_topMotorRing) _topMotorRing = document.getElementById('top-motor-ring');
+    if (!_topMotorDot) _topMotorDot = document.getElementById('top-motor-dot');
+    if (!_topConnector) _topConnector = document.getElementById('top-connector');
 }
 
 // Update claw visual position in SVG
 function updateClawPosition() {
     getCachedClawElements();
 
-    // Update arm length dynamically
-    _clawArm.setAttribute('y2', gameState.clawY + 30);
+    const cx = gameState.clawX;
+
+    // Top motor follows horizontally
+    _topMotorRing.setAttribute('cx', cx);
+    _topMotorDot.setAttribute('cx', cx);
+    _topConnector.setAttribute('x1', cx);
+    _topConnector.setAttribute('x2', cx);
+
+    // Cable follows the claw horizontally; bottom end connects to the connector ring
+    _clawArm.setAttribute('x1', cx);
+    _clawArm.setAttribute('x2', cx);
+    _clawArm.setAttribute('y2', gameState.clawY + 28);
 
     // Keep assembly movement anchored to the SVG's base claw geometry.
-    const offsetX = gameState.clawX - CONFIG.CLAW_ASSEMBLY_BASE_X;
+    const offsetX = cx - CONFIG.CLAW_ASSEMBLY_BASE_X;
     const offsetY = gameState.clawY - CONFIG.CLAW_ASSEMBLY_BASE_Y;
 
     _clawAssembly.setAttribute('transform', `translate(${offsetX}, ${offsetY})`);
@@ -611,19 +627,30 @@ async function grabPrize() {
 
     gameState.tokens--;
     gameState.isGrabbing = true;
-    playSound('grab');
 
     // Disable buttons during grab
     toggleButtons(false);
 
     try {
-        // Close claw fingers
-        closeClaw();
-        await wait(300);
-
-        // Move claw down
+        // Move claw down with prongs open
         await moveClawDown();
-        await wait(200);
+        await wait(150);
+
+        // Mechanical wobble before grab
+        getCachedClawElements();
+        const baseX = gameState.clawX - CONFIG.CLAW_ASSEMBLY_BASE_X;
+        const baseY = gameState.clawY - CONFIG.CLAW_ASSEMBLY_BASE_Y;
+        _clawAssembly.setAttribute('transform', `translate(${baseX - 3}, ${baseY})`);
+        await wait(60);
+        _clawAssembly.setAttribute('transform', `translate(${baseX + 3}, ${baseY})`);
+        await wait(60);
+        _clawAssembly.setAttribute('transform', `translate(${baseX}, ${baseY})`);
+        await wait(80);
+
+        // Snap claws closed
+        closeClaw();
+        playSound('grab');
+        await wait(350);
 
         // Check for caught prizes
         const caughtCount = await checkPrizeCollision();
@@ -684,30 +711,35 @@ async function grabPrize() {
     }
 }
 
-// Close claw
+// Close claw (grab animation)
 function closeClaw() {
     const leftFinger = document.getElementById('left-finger');
     const rightFinger = document.getElementById('right-finger');
     const centerFinger = document.getElementById('center-finger');
     const glowCircle = document.getElementById('claw-glow');
+    const motorLight = document.getElementById('claw-motor-light');
 
-    if (leftFinger) leftFinger.setAttribute('transform', 'translate(-5, 0)');
-    if (rightFinger) rightFinger.setAttribute('transform', 'translate(5, 0)');
-    if (centerFinger) centerFinger.setAttribute('transform', 'scaleY(0.8)');
-    if (glowCircle) glowCircle.style.opacity = '1';
+    // Rotate prongs inward around their pivot points
+    if (leftFinger) leftFinger.setAttribute('transform', 'rotate(25, 338, 326)');
+    if (rightFinger) rightFinger.setAttribute('transform', 'rotate(-25, 362, 326)');
+    if (centerFinger) centerFinger.setAttribute('transform', 'translate(0, -8) scaleY(0.85)');
+    if (glowCircle) glowCircle.style.opacity = '0.6';
+    if (motorLight) motorLight.setAttribute('fill', '#00FFFF');
 }
 
-// Open claw
+// Open claw (release)
 function openClaw() {
     const leftFinger = document.getElementById('left-finger');
     const rightFinger = document.getElementById('right-finger');
     const centerFinger = document.getElementById('center-finger');
     const glowCircle = document.getElementById('claw-glow');
+    const motorLight = document.getElementById('claw-motor-light');
 
-    if (leftFinger) leftFinger.setAttribute('transform', 'translate(0, 0)');
-    if (rightFinger) rightFinger.setAttribute('transform', 'translate(0, 0)');
-    if (centerFinger) centerFinger.setAttribute('transform', 'scaleY(1)');
+    if (leftFinger) leftFinger.setAttribute('transform', 'rotate(0, 338, 326)');
+    if (rightFinger) rightFinger.setAttribute('transform', 'rotate(0, 362, 326)');
+    if (centerFinger) centerFinger.setAttribute('transform', 'translate(0, 0) scaleY(1)');
     if (glowCircle) glowCircle.style.opacity = '0';
+    if (motorLight) motorLight.setAttribute('fill', '#FF1493');
 }
 
 // Move claw down during grab
