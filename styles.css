@@ -2008,3 +2008,348 @@ h1 {
     box-shadow: 0 0 18px rgba(0, 255, 255, 0.35);
     color: #fff;
 }
+
+/* ===== Mobile Touch D-Pad ===== */
+.touch-controls {
+    display: none; /* shown only on mobile via media query */
+    flex-shrink: 0;
+    gap: 6px;
+    align-items: center;
+    justify-content: center;
+    padding: 4px 0;
+}
+
+.touch-dpad {
+    display: grid;
+    grid-template-areas:
+        ".    up   ."
+        "left .    right"
+        ".    down .";
+    grid-template-columns: 48px 48px 48px;
+    grid-template-rows: 48px 48px 48px;
+    gap: 4px;
+}
+
+.touch-dpad-btn {
+    width: 48px;
+    height: 48px;
+    border-radius: 12px;
+    border: 2px solid rgba(0, 255, 255, 0.5);
+    background: rgba(0, 255, 255, 0.1);
+    color: #00FFFF;
+    font-size: 1.4em;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    -webkit-tap-highlight-color: transparent;
+    touch-action: manipulation;
+    user-select: none;
+    transition: background 0.1s, transform 0.1s;
+}
+
+.touch-dpad-btn:active {
+    background: rgba(0, 255, 255, 0.35);
+    transform: scale(0.92);
+}
+
+.touch-dpad-btn[data-dir="up"]    { grid-area: up; }
+.touch-dpad-btn[data-dir="left"]  { grid-area: left; }
+.touch-dpad-btn[data-dir="right"] { grid-area: right; }
+.touch-dpad-btn[data-dir="down"]  { grid-area: down; }
+
+.touch-grab-btn {
+    width: 100px;
+    height: 100px;
+    border-radius: 50%;
+    border: 3px solid #FF1493;
+    background: radial-gradient(circle, rgba(255, 20, 147, 0.25) 0%, rgba(255, 20, 147, 0.08) 100%);
+    color: #FF1493;
+    font-size: 0.85em;
+    font-weight: 900;
+    font-family: 'Courier New', monospace;
+    letter-spacing: 1px;
+    cursor: pointer;
+    -webkit-tap-highlight-color: transparent;
+    touch-action: manipulation;
+    user-select: none;
+    text-shadow: 0 0 8px rgba(255, 20, 147, 0.5);
+    box-shadow: 0 0 20px rgba(255, 20, 147, 0.25);
+    transition: background 0.1s, transform 0.1s;
+    margin-left: 16px;
+}
+
+.touch-grab-btn:active {
+    background: radial-gradient(circle, rgba(255, 20, 147, 0.5) 0%, rgba(255, 20, 147, 0.2) 100%);
+    transform: scale(0.93);
+    box-shadow: 0 0 30px rgba(255, 20, 147, 0.6);
+}
+
+/* ===== MOBILE LAYOUT (phones) ===== */
+@media (max-width: 768px) and (pointer: coarse) {
+    body {
+        padding: 4px;
+        align-items: flex-start;
+    }
+
+    .game-container {
+        padding: 6px 8px;
+        height: 100vh;
+        height: 100dvh;
+        width: 100vw;
+        border-radius: 0;
+        border: none;
+        gap: 0;
+    }
+
+    h1 {
+        font-size: 0.82em;
+        margin-bottom: 4px;
+        letter-spacing: 1px;
+    }
+
+    .info-bar {
+        margin-bottom: 4px;
+        padding: 4px 8px;
+        gap: 6px;
+        max-width: 100%;
+        border-radius: 10px;
+    }
+
+    .info-stat {
+        padding: 4px 8px;
+        min-width: 0;
+        flex: 1;
+        border-radius: 8px;
+    }
+
+    .info-stat-label {
+        font-size: 0.55em;
+        margin-bottom: 0;
+    }
+
+    .info-stat-value {
+        font-size: 1em;
+    }
+
+    /* Machine: stack vertically, claw takes most space */
+    .machine {
+        grid-template-columns: 1fr;
+        gap: 4px;
+        flex: 1;
+        min-height: 0;
+    }
+
+    .machine-stage {
+        flex: 1;
+        min-height: 0;
+        border-radius: 10px;
+    }
+
+    /* Caught section: small horizontal strip */
+    .caught-section {
+        min-height: 0;
+        max-height: 72px;
+        padding: 4px 8px;
+        border-radius: 10px;
+        flex-direction: row;
+        align-items: center;
+        gap: 8px;
+        overflow: hidden;
+    }
+
+    .caught-section h3 {
+        font-size: 0.7em;
+        margin-bottom: 0;
+        padding-bottom: 0;
+        border-bottom: none;
+        white-space: nowrap;
+        writing-mode: vertical-rl;
+        text-orientation: mixed;
+        letter-spacing: 0;
+    }
+
+    .bonus-message {
+        display: none;
+    }
+
+    .caught-container {
+        display: flex;
+        flex-direction: row;
+        flex-wrap: nowrap;
+        gap: 4px;
+        overflow-x: auto;
+        overflow-y: hidden;
+        padding: 2px;
+        align-items: center;
+        min-height: 0;
+        flex: 1;
+    }
+
+    .caught-prize {
+        width: 52px;
+        height: 52px;
+        min-width: 52px;
+        border-radius: 8px;
+        font-size: 28px;
+    }
+
+    /* Desktop controls: compact */
+    .controls {
+        padding-top: 4px;
+        gap: 4px;
+        border-top: none;
+    }
+
+    .controls-hint {
+        display: none;
+    }
+
+    .controls-row {
+        gap: 4px;
+        flex-wrap: wrap;
+        justify-content: center;
+    }
+
+    .control-btn {
+        padding: 6px 10px;
+        font-size: 0.65em;
+        min-width: 0;
+        border-radius: 8px;
+    }
+
+    /* Show touch controls on mobile */
+    .touch-controls {
+        display: flex;
+    }
+
+    .game-status {
+        font-size: 0.65em;
+        margin-top: 2px;
+        min-height: 12px;
+    }
+
+    /* Floating kaomojis: smaller on mobile */
+    .floating-kaomoji {
+        font-size: 1.2em;
+    }
+
+    /* Tutorial: fit phone screen */
+    .tutorial-card {
+        min-width: unset;
+        width: 95vw;
+        max-width: 95vw;
+        padding: 18px 14px;
+        max-height: 90vh;
+        max-height: 90dvh;
+        border-radius: 14px;
+    }
+
+    .tutorial-title {
+        font-size: 1.3em;
+    }
+
+    .tutorial-subtitle {
+        font-size: 0.85em;
+    }
+
+    .tutorial-sections {
+        gap: 8px;
+        margin-bottom: 14px;
+    }
+
+    .tutorial-section {
+        padding: 10px 10px;
+        gap: 8px;
+    }
+
+    .tutorial-section-icon {
+        font-size: 1.3em;
+        width: 30px;
+    }
+
+    .tutorial-section-title {
+        font-size: 0.85em;
+    }
+
+    .tutorial-section-text {
+        font-size: 0.78em;
+        line-height: 1.45;
+    }
+
+    .tutorial-start-btn {
+        padding: 12px 28px;
+        font-size: 1em;
+    }
+
+    /* Splash / game over: fit phone screen */
+    .splash-card {
+        min-width: unset;
+        width: 95vw;
+        max-width: 95vw;
+        padding: 20px 14px;
+        max-height: 90vh;
+        max-height: 90dvh;
+        border-radius: 14px;
+    }
+
+    .splash-title {
+        font-size: 1.4em;
+    }
+
+    .splash-stats {
+        gap: 8px;
+    }
+
+    .splash-stat {
+        padding: 8px 10px;
+        min-width: 0;
+    }
+
+    .splash-stat-value {
+        font-size: 1.3em;
+    }
+
+    .splash-plushies-grid {
+        grid-template-columns: repeat(auto-fill, minmax(60px, 1fr));
+        gap: 6px;
+        padding: 6px;
+    }
+
+    .splash-plushie-item svg {
+        width: 44px;
+        height: 44px;
+    }
+
+    .splash-plushie-name {
+        font-size: 0.6em;
+    }
+
+    .splash-buttons {
+        gap: 8px;
+    }
+
+    .splash-btn {
+        padding: 10px 18px;
+        font-size: 0.95em;
+    }
+
+    /* Stats modal: fit phone */
+    .stats-card {
+        width: 96vw;
+        height: 92vh;
+        height: 92dvh;
+        padding: 16px 12px;
+        border-radius: 14px;
+    }
+
+    .stats-lifetime {
+        grid-template-columns: repeat(2, 1fr);
+        gap: 6px;
+    }
+
+    .stats-table {
+        font-size: 0.72em;
+    }
+}
+

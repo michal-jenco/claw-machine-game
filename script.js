@@ -1517,6 +1517,60 @@ window.addEventListener('load', () => {
             }
         });
 
+        // ===== Mobile touch D-pad controls =====
+        (function setupTouchControls() {
+            const dpadBtns = document.querySelectorAll('.touch-dpad-btn');
+            const grabBtn = document.getElementById('touch-grab-btn');
+            if (!dpadBtns.length || !grabBtn) return;
+
+            let moveInterval = null;
+            let moveTimeout = null;
+
+            function startMoving(dir) {
+                stopMoving();
+                moveClaw(dir);
+                // After a short delay, repeat at ~60fps-ish speed
+                moveTimeout = setTimeout(() => {
+                    moveInterval = setInterval(() => moveClaw(dir), 50);
+                }, 200);
+            }
+
+            function stopMoving() {
+                if (moveTimeout) { clearTimeout(moveTimeout); moveTimeout = null; }
+                if (moveInterval) { clearInterval(moveInterval); moveInterval = null; }
+            }
+
+            dpadBtns.forEach(btn => {
+                const dir = btn.dataset.dir;
+
+                btn.addEventListener('touchstart', (e) => {
+                    e.preventDefault();
+                    startMoving(dir);
+                }, { passive: false });
+
+                btn.addEventListener('touchend', (e) => {
+                    e.preventDefault();
+                    stopMoving();
+                }, { passive: false });
+
+                btn.addEventListener('touchcancel', () => stopMoving());
+
+                // Also support mouse for testing
+                btn.addEventListener('mousedown', (e) => {
+                    e.preventDefault();
+                    startMoving(dir);
+                });
+                btn.addEventListener('mouseup', () => stopMoving());
+                btn.addEventListener('mouseleave', () => stopMoving());
+            });
+
+            grabBtn.addEventListener('touchstart', (e) => {
+                e.preventDefault();
+                grabPrize();
+            }, { passive: false });
+
+            grabBtn.addEventListener('click', () => grabPrize());
+        })();
 
 
         // Initialize the game
