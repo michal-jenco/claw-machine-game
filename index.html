@@ -168,6 +168,7 @@
                 <button id="stats-btn" class="control-btn stats-btn">📊 STATS</button>
                 <button id="reset-btn" class="control-btn reset-btn">🔄 NEW GAME</button>
                 <button id="export-btn" class="control-btn export-btn" style="display: none;">📸 EXPORT</button>
+                <button id="tutorial-btn" class="control-btn tutorial-btn">❓ HOW TO PLAY</button>
             </div>
         </div>
 
@@ -292,6 +293,86 @@
             </div>
 
             <button id="stats-clear-btn" class="stats-clear-btn">🗑️ Clear History</button>
+        </div>
+    </div>
+
+    <!-- Tutorial Splash Screen -->
+    <div id="tutorial-overlay" class="tutorial-overlay" style="display: none;">
+        <div class="tutorial-card">
+            <button id="tutorial-close-btn" class="tutorial-close-btn">✕</button>
+            <div class="tutorial-header">
+                <div class="tutorial-title">✨ How To Play ✨</div>
+                <div class="tutorial-subtitle">Welcome to the Kawaii Claw Machine! (◕‿◕✿)</div>
+            </div>
+
+            <div class="tutorial-sections">
+                <!-- Controls -->
+                <div class="tutorial-section">
+                    <div class="tutorial-section-icon">🕹️</div>
+                    <div class="tutorial-section-body">
+                        <div class="tutorial-section-title">Controls</div>
+                        <div class="tutorial-section-text">
+                            Use <kbd>←</kbd> <kbd>→</kbd> <kbd>↑</kbd> <kbd>↓</kbd> <strong>Arrow Keys</strong> to move the claw around the machine.<br>
+                            Press <kbd>Space</kbd> or <kbd>Enter</kbd> to drop the claw and grab!
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Tokens -->
+                <div class="tutorial-section">
+                    <div class="tutorial-section-icon">🪙</div>
+                    <div class="tutorial-section-body">
+                        <div class="tutorial-section-title">Tokens</div>
+                        <div class="tutorial-section-text">
+                            You start with <strong>5 tokens</strong>. Each grab costs 1 token.<br>
+                            When you run out, the game ends — but <strong>leftover tokens</strong> give you a huge <strong>cubic bonus</strong> (tokens³ × score), so grab wisely!
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Scoring -->
+                <div class="tutorial-section">
+                    <div class="tutorial-section-icon">⭐</div>
+                    <div class="tutorial-section-body">
+                        <div class="tutorial-section-title">Scoring & Tickets</div>
+                        <div class="tutorial-section-text">
+                            Each plushie is worth <strong>14–25 points</strong>. You also earn <strong>tickets</strong> (1 ticket per 5 points).<br>
+                            Points and tickets stack up — aim for the highest score!
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Bonuses -->
+                <div class="tutorial-section">
+                    <div class="tutorial-section-icon">🔥</div>
+                    <div class="tutorial-section-body">
+                        <div class="tutorial-section-title">Bonuses</div>
+                        <div class="tutorial-section-text">
+                            <strong>Multi-Catch:</strong> Grab 2+ plushies at once for quadratic bonus points + a bonus token!<br>
+                            <strong>✨ Shiny:</strong> One random plushie each game glows — catch it for <strong>×10 points</strong>!<br>
+                            <strong>🎊 Perfect Game:</strong> Catch ALL plushies for a massive score² bonus!
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Stats -->
+                <div class="tutorial-section">
+                    <div class="tutorial-section-icon">📊</div>
+                    <div class="tutorial-section-body">
+                        <div class="tutorial-section-title">Stats & High Scores</div>
+                        <div class="tutorial-section-text">
+                            Click the <strong>📊 STATS</strong> button to see your lifetime stats, best scores, and full game history.<br>
+                            After each game you can <strong>📸 export</strong> a report card PNG to share!
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="tutorial-footer-btns">
+                <button id="tutorial-start-btn" class="tutorial-start-btn">🎮 LET'S PLAY!</button>
+            </div>
+
+            <div class="tutorial-footer">Good luck & have fun~! ♡(◕ᗜ◕✿)</div>
         </div>
     </div>
 

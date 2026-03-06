@@ -117,6 +117,24 @@ const GameHistory = {
     }
 };
 
+// ===== Tutorial (first-visit detection) =====
+const TUTORIAL_SEEN_KEY = 'kawaiiClawTutorialSeen';
+
+function openTutorial() {
+    document.getElementById('tutorial-overlay').style.display = 'flex';
+}
+
+function closeTutorial() {
+    document.getElementById('tutorial-overlay').style.display = 'none';
+    localStorage.setItem(TUTORIAL_SEEN_KEY, '1');
+}
+
+function showTutorialIfFirstVisit() {
+    if (!localStorage.getItem(TUTORIAL_SEEN_KEY)) {
+        openTutorial();
+    }
+}
+
 function getRandomKaomojis(count) {
     const shuffled = [...KAOMOJIS].sort(() => Math.random() - 0.5);
     return shuffled.slice(0, count);
@@ -1448,10 +1466,23 @@ window.addEventListener('load', () => {
         }
         updateSoundButton();
 
+        // Tutorial buttons
+        document.getElementById('tutorial-btn').addEventListener('click', openTutorial);
+        document.getElementById('tutorial-close-btn').addEventListener('click', closeTutorial);
+        document.getElementById('tutorial-start-btn').addEventListener('click', closeTutorial);
+        document.getElementById('tutorial-overlay').addEventListener('click', (e) => {
+            if (e.target.id === 'tutorial-overlay') closeTutorial();
+        });
+
         // Set up keyboard controls
         document.addEventListener('keydown', (e) => {
             // Close stats modal with Escape
             if (e.key === 'Escape') {
+                const tutorialOverlay = document.getElementById('tutorial-overlay');
+                if (tutorialOverlay.style.display === 'flex') {
+                    closeTutorial();
+                    return;
+                }
                 const statsOverlay = document.getElementById('stats-overlay');
                 if (statsOverlay.style.display === 'flex') {
                     closeStatsModal();
@@ -1490,6 +1521,9 @@ window.addEventListener('load', () => {
 
         // Initialize the game
         initGame();
+
+        // Show tutorial for first-time visitors
+        showTutorialIfFirstVisit();
     } catch (error) {
         console.error('Error during initialization:', error);
         alert('Error initializing game: ' + error.message);
