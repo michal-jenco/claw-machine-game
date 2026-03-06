@@ -28,7 +28,7 @@ const CONFIG = {
     GLASS_BOX_WIDTH: 560,
     GLASS_BOX_HEIGHT: 420,
     CLAW_HOME_X: 350,
-    CLAW_HOME_Y: 160,
+    CLAW_HOME_Y: 130,
     CLAW_ASSEMBLY_BASE_X: 350,
     CLAW_ASSEMBLY_BASE_Y: 300,
     CLAW_SPEED: 8,
@@ -556,7 +556,7 @@ function moveClaw(direction) {
             gameState.clawX = Math.min(CONFIG.GLASS_BOX_LEFT + CONFIG.GLASS_BOX_WIDTH - horizontalMargin, gameState.clawX + step);
             break;
         case 'up':
-            gameState.clawY = Math.max(CONFIG.GLASS_BOX_TOP + topMargin, gameState.clawY - step);
+            gameState.clawY = Math.max(CONFIG.GLASS_BOX_TOP, gameState.clawY - step);
             break;
         case 'down':
             gameState.clawY = Math.min(CONFIG.GLASS_BOX_TOP + CONFIG.GLASS_BOX_HEIGHT - bottomMargin, gameState.clawY + step);
