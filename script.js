@@ -1,4 +1,4 @@
-console.log('🎮 Script.js is loading...');
+
 
 // Game state
 const gameState = {
@@ -36,10 +36,19 @@ const CONFIG = {
     MAX_TOKENS: 5,
     PRIZE_COUNT: 12,
     PERFECT_GAME_BONUS: 500,
-    BONUS_DISPLAY_MS: 4000,
-    PERFECT_BONUS_DISPLAY_MS: 5000,
+    BONUS_DISPLAY_MS: 2000,
+    PERFECT_BONUS_DISPLAY_MS: 2000,
     SHINY_BONUS_POINTS: 1000,
     SHINY_TO_BONUS_DELAY_MS: 4200,
+    MULTI_CATCH_BASE_BONUS: 50,       // Base bonus points for catching 2+
+    MULTI_CATCH_LABELS: [
+        '',                  // 0 - unused
+        '',                  // 1 - no bonus for single catch
+        '🎯 DOUBLE CATCH!',  // 2
+        '🔥 TRIPLE CATCH!',  // 3
+        '💥 QUAD CATCH!',    // 4
+        '🌟 MEGA CATCH!',    // 5+
+    ],
     PRIZE_SIZE: 82,
     PRIZE_RADIUS: 41,
     PRIZE_EDGE_PADDING: 22,
@@ -58,6 +67,116 @@ const CONFIG = {
         { emoji: '⭐', name: 'Star Plushie', points: 17 }
     ]
 };
+
+// Kawaii kaomojis for decoration
+const KAOMOJIS = [
+    '(◕‿◕✿)', '(ノ◕ヮ◕)ノ*:・゚✧', '(✿◠‿◠)', '(◕ᴗ◕✿)',
+    '(˶ᵔ ᵕ ᵔ˶)', '(⁠◍⁠•⁠ᴗ⁠•⁠◍⁠)⁠✧⁠*', '(⁠ ⁠╹⁠▽⁠╹⁠ ⁠)', '✧(◕ヮ◕)✧',
+    '(⁠≧⁠▽⁠≦⁠)', '(⁠◠⁠‿⁠◕⁠)', '(⁠◕⁠દ⁠◕⁠)', '♡(◕ᗜ◕✿)',
+    '(˶˃ ᵕ ˂˶)', '(✧ω✧)', '(⁠✿⁠^⁠‿⁠^⁠)', '(⁠ ⁠ꈍ⁠ᴗ⁠ꈍ⁠)',
+    '✿(◕‿◕)✿', '(ﾉ◕ヮ◕)ﾉ✿', '(◕‿◕)♡', '(*≧ω≦)',
+    '(⁠◕⁠ᴗ⁠◕⁠✿⁠)', '(⁠✯⁠ᴗ⁠✯⁠)', '(⁠人⁠*⁠´⁠∀⁠`⁠)⁠｡⁠*ﾟ⁠+', '♪(◕ᴗ◕✿)',
+    '(˶ˆᗜˆ˵)', '(✿˶˘ ᵕ ˘˶)', '(⁠◍⁠•⁠ᴗ⁠•⁠◍⁠)⁠♡', '✧˖°(◕‿◕✿)°˖✧',
+    '(⁠≧⁠◡⁠≦⁠)⁠♡', 'ヾ(◕ᗜ◕)ﾉ✿', '(◕‿◕)☆', '(✿ᵕᴗᵕ)ノ'
+];
+
+function getRandomKaomojis(count) {
+    const shuffled = [...KAOMOJIS].sort(() => Math.random() - 0.5);
+    return shuffled.slice(0, count);
+}
+
+function randomizeKaomojiStyle(el) {
+    // Random drift direction and distance
+    const dx = (-20 + Math.random() * 40).toFixed(1);  // -20px to +20px
+    const dy = (-18 + Math.random() * 36).toFixed(1);  // -18px to +18px
+    // Random rotation range
+    const rotFrom = (-8 + Math.random() * 6).toFixed(1);   // -8deg to -2deg
+    const rotTo = (2 + Math.random() * 6).toFixed(1);      // +2deg to +8deg
+    // Random drift speed
+    const driftDur = (3 + Math.random() * 5).toFixed(2);   // 3s to 8s
+    // Random pulse speed (independent)
+    const pulseDur = (2 + Math.random() * 4).toFixed(2);   // 2s to 6s
+    // Random opacity range
+    const opLo = (0.15 + Math.random() * 0.15).toFixed(2); // 0.15 to 0.30
+    const opHi = (0.4 + Math.random() * 0.2).toFixed(2);   // 0.40 to 0.60
+
+    el.style.setProperty('--kao-dx', `${dx}px`);
+    el.style.setProperty('--kao-dy', `${dy}px`);
+    el.style.setProperty('--kao-rot-from', `${rotFrom}deg`);
+    el.style.setProperty('--kao-rot-to', `${rotTo}deg`);
+    el.style.setProperty('--kao-drift-dur', `${driftDur}s`);
+    el.style.setProperty('--kao-pulse-dur', `${pulseDur}s`);
+    el.style.setProperty('--kao-opacity-lo', opLo);
+    el.style.setProperty('--kao-opacity-hi', opHi);
+    // Random start offset so they don't sync
+    el.style.animationDelay = `${(-Math.random() * 8).toFixed(2)}s`;
+}
+
+function spawnKaomojis() {
+    // Remove old kaomojis
+    document.querySelectorAll('.floating-kaomoji').forEach(el => el.remove());
+
+    const container = document.querySelector('.caught-section');
+    if (!container) return;
+
+    const count = 10 + Math.floor(Math.random() * 6); // 10-15 kaomojis
+    const kaomojis = getRandomKaomojis(count);
+
+    kaomojis.forEach((kao) => {
+        const el = document.createElement('div');
+        el.className = 'floating-kaomoji';
+        el.textContent = kao;
+        el.setAttribute('aria-hidden', 'true');
+
+        // Scatter randomly across the caught section background
+        const top = 5 + Math.random() * 88;
+        const left = 3 + Math.random() * 85;
+
+        el.style.top = `${top}%`;
+        el.style.left = `${left}%`;
+        randomizeKaomojiStyle(el);
+
+        container.appendChild(el);
+    });
+}
+
+function populateKaomojiDecorations(parentEl, className) {
+    if (!parentEl) return;
+
+    // Remove old ones
+    parentEl.querySelectorAll(`.${className}`).forEach(el => el.remove());
+
+    const positions = [
+        { top: '1%', left: '2%' },
+        { top: '1%', right: '2%' },
+        { top: '12%', left: '1%' },
+        { top: '15%', right: '1%' },
+        { top: '35%', left: '0%' },
+        { top: '38%', right: '0%' },
+        { top: '58%', left: '1%' },
+        { top: '62%', right: '1%' },
+        { bottom: '12%', left: '2%' },
+        { bottom: '10%', right: '2%' },
+        { bottom: '2%', left: '3%' },
+        { bottom: '2%', right: '3%' },
+    ];
+
+    const kaos = getRandomKaomojis(positions.length);
+
+    positions.forEach((pos, i) => {
+        const el = document.createElement('div');
+        el.className = className;
+        el.textContent = kaos[i];
+        el.setAttribute('aria-hidden', 'true');
+
+        Object.entries(pos).forEach(([prop, val]) => {
+            el.style[prop] = val;
+        });
+
+        randomizeKaomojiStyle(el);
+        parentEl.appendChild(el);
+    });
+}
 
 function ensureAudioContext() {
     if (!gameState.soundEnabled) return null;
@@ -206,7 +325,7 @@ function showShinyCatchBurst(bonusAmount) {
 
 // Initialize game
 function initGame() {
-    console.log('initGame called');
+
     gameState.score = 0;
     gameState.tickets = 0;
     gameState.tokens = 5;
@@ -219,6 +338,8 @@ function initGame() {
     gameState.caughtPrizes = [];
     gameState.shinyPrizeId = null;
     gameState.lastShinyCatchAt = 0;
+    gameState.lastTokenBonus = 0;
+    gameState.lastTokensLeft = 0;
 
     clearBonusMessageTimers();
     const bonusEl = document.getElementById('bonus-message');
@@ -232,19 +353,21 @@ function initGame() {
     clearGameStatus();
     document.getElementById('caught-container').innerHTML = '';
     document.getElementById('export-btn').style.display = 'none';
+    hideSplashScreen();
 
     // Enable all control buttons
     toggleButtons(true);
 
     resetClawPosition();
-    console.log('initGame completed');
+    spawnKaomojis();
+
 }
 
 // Generate random prizes in the glass box (SVG)
 function generatePrizes() {
-    console.log('generatePrizes called');
+
     const container = document.getElementById('prizes-svg-container');
-    console.log('Container:', container);
+
 
     if (!container) {
         console.error('prizes-svg-container not found!');
@@ -260,7 +383,7 @@ function generatePrizes() {
         const position = findSpawnPosition(gameState.prizes);
         const isShiny = i === gameState.shinyPrizeId;
 
-        console.log(`Creating prize ${i}: ${prizeType.name} at (${position.x}, ${position.y})${isShiny ? ' [SHINY]' : ''}`);
+
 
         const prize = {
             id: i,
@@ -280,8 +403,6 @@ function generatePrizes() {
         prizeGroup.id = `prize-${i}`;
         prizeGroup.setAttribute('data-prize-id', i);
         prizeGroup.setAttribute('transform', `translate(${prize.x - CONFIG.PRIZE_SIZE / 2}, ${prize.y - CONFIG.PRIZE_SIZE / 2})`);
-        prizeGroup.style.cursor = 'grab';
-        prizeGroup.style.filter = 'drop-shadow(0 2px 5px rgba(255, 20, 147, 0.4))';
         prizeGroup.style.transition = 'opacity 0.3s';
 
         if (isShiny) {
@@ -336,14 +457,14 @@ function generatePrizes() {
             }
 
             container.appendChild(prizeGroup);
-            console.log(`Prize ${i} added successfully`);
+
         } catch (error) {
             console.error(`Error creating prize ${i}:`, error);
         }
     }
 
-    console.log(`Total prizes created: ${gameState.prizes.length}`);
-    console.log('Container children count:', container.children.length);
+
+
 }
 
 function findSpawnPosition(existingPrizes) {
@@ -417,19 +538,27 @@ function moveClaw(direction) {
     }
 }
 
+// Cached DOM references for hot-path elements
+let _clawAssembly = null;
+let _clawArm = null;
+
+function getCachedClawElements() {
+    if (!_clawAssembly) _clawAssembly = document.getElementById('claw-assembly');
+    if (!_clawArm) _clawArm = document.getElementById('claw-arm');
+}
+
 // Update claw visual position in SVG
 function updateClawPosition() {
-    const clawAssembly = document.getElementById('claw-assembly');
-    const clawArm = document.getElementById('claw-arm');
+    getCachedClawElements();
 
     // Update arm length dynamically
-    clawArm.setAttribute('y2', gameState.clawY + 30);
+    _clawArm.setAttribute('y2', gameState.clawY + 30);
 
     // Keep assembly movement anchored to the SVG's base claw geometry.
     const offsetX = gameState.clawX - CONFIG.CLAW_ASSEMBLY_BASE_X;
     const offsetY = gameState.clawY - CONFIG.CLAW_ASSEMBLY_BASE_Y;
 
-    clawAssembly.setAttribute('transform', `translate(${offsetX}, ${offsetY})`);
+    _clawAssembly.setAttribute('transform', `translate(${offsetX}, ${offsetY})`);
 }
 
 // Reset claw to starting position
@@ -462,14 +591,20 @@ async function grabPrize() {
 
         // Check for caught prizes
         const caughtCount = await checkPrizeCollision();
-        const bonusTokens = caughtCount > 1
-            ? Math.min(CONFIG.MAX_TOKENS - gameState.tokens, caughtCount - 1)
-            : 0;
 
-        if (bonusTokens > 0) {
-            gameState.tokens += bonusTokens;
+        if (caughtCount > 1) {
+            // Exponential score bonus: base × 2^(count-1)
+            const bonusPoints = CONFIG.MULTI_CATCH_BASE_BONUS * Math.pow(2, caughtCount - 1);
+            // Flat token bonus: +1 for any multi-catch (balanced)
+            const bonusTokens = Math.min(CONFIG.MAX_TOKENS - gameState.tokens, 1);
+
+            gameState.score += bonusPoints;
+            gameState.tickets += Math.floor(bonusPoints / 5);
+            if (bonusTokens > 0) {
+                gameState.tokens += bonusTokens;
+            }
             updateUI();
-            showBonusMessage(bonusTokens);
+            showBonusMessage(caughtCount, bonusPoints, bonusTokens);
         }
 
         // Check if all prizes caught (Perfect Game!)
@@ -652,13 +787,18 @@ function endGame(isPerfect = false) {
     toggleButtons(false);
     document.getElementById('reset-btn').disabled = false;
 
-    // Show export button if player caught any plushies
-    const exportBtn = document.getElementById('export-btn');
-    if (gameState.caughtPrizes.length > 0) {
-        exportBtn.style.display = 'block';
-        exportBtn.disabled = false;
-        exportBtn.style.opacity = '1';
+    // Token bonus: multiply final score by tokens³ (cubic scaling)
+    const tokensLeft = gameState.tokens;
+    let tokenBonus = 0;
+    if (tokensLeft > 0 && gameState.score > 0) {
+        const multiplier = Math.pow(tokensLeft, 3);
+        tokenBonus = gameState.score * multiplier;
+        gameState.score += tokenBonus;
+        gameState.tickets += Math.floor(tokenBonus / 5);
+        updateUI();
     }
+    gameState.lastTokenBonus = tokenBonus;
+    gameState.lastTokensLeft = tokensLeft;
 
     let message;
     if (isPerfect) {
@@ -668,6 +808,80 @@ function endGame(isPerfect = false) {
         playSound('gameOver');
     }
     displayGameStatus(message);
+
+    // Show the splash screen after a brief pause
+    setTimeout(() => showSplashScreen(isPerfect), isPerfect ? 200 : 800);
+}
+
+function showSplashScreen(isPerfect) {
+    const splash = document.getElementById('splash-screen');
+
+    // Title
+    document.getElementById('splash-title').textContent = isPerfect
+        ? '🎊 PERFECT GAME! 🎊'
+        : '🎉 Game Over! 🎉';
+
+    // Stats
+    document.getElementById('splash-score').textContent = gameState.score;
+    document.getElementById('splash-tickets').textContent = gameState.tickets;
+    document.getElementById('splash-count').textContent = gameState.caughtPrizes.length;
+
+    // Perfect badge
+    document.getElementById('splash-perfect-badge').style.display = isPerfect ? 'block' : 'none';
+
+    // Token bonus badge
+    const tokenBonusBadge = document.getElementById('splash-token-bonus');
+    if (gameState.lastTokenBonus > 0) {
+        const tokensLeft = gameState.lastTokensLeft;
+        const multiplier = Math.pow(tokensLeft, 3);
+        document.getElementById('splash-token-bonus-tokens').textContent = tokensLeft;
+        document.getElementById('splash-token-bonus-multiplier').textContent = `×${multiplier}`;
+        document.getElementById('splash-token-bonus-points').textContent = `+${gameState.lastTokenBonus.toLocaleString()}`;
+        tokenBonusBadge.style.display = 'block';
+    } else {
+        tokenBonusBadge.style.display = 'none';
+    }
+
+    // Plushie collection grid
+    const grid = document.getElementById('splash-plushies');
+    const emptyMsg = document.getElementById('splash-empty');
+    grid.innerHTML = '';
+
+    if (gameState.caughtPrizes.length === 0) {
+        emptyMsg.style.display = 'block';
+    } else {
+        emptyMsg.style.display = 'none';
+        gameState.caughtPrizes.forEach((prize, i) => {
+            const item = document.createElement('div');
+            item.className = 'splash-plushie-item';
+            if (prize.shiny) item.classList.add('splash-shiny');
+            item.style.animationDelay = `${i * 0.06}s`;
+
+            const svg = PlushieFactory.createPlushieSVG(
+                PlushieFactory.getPrizeType(prize.emoji),
+                60
+            );
+
+            item.innerHTML = `
+                ${svg}
+                <div class="splash-plushie-name">${prize.shiny ? '✨ ' : ''}${prize.name}</div>
+            `;
+            grid.appendChild(item);
+        });
+    }
+
+    // Show/hide export button based on whether any plushies were caught
+    const exportBtn = document.getElementById('splash-export-btn');
+    exportBtn.style.display = gameState.caughtPrizes.length > 0 ? 'inline-block' : 'none';
+
+    // Add kaomoji decorations to splash card
+    populateKaomojiDecorations(document.querySelector('.splash-card'), 'splash-kaomoji');
+
+    splash.style.display = 'flex';
+}
+
+function hideSplashScreen() {
+    document.getElementById('splash-screen').style.display = 'none';
 }
 
 // Display status message
@@ -676,18 +890,27 @@ function displayGameStatus(message) {
     statusEl.textContent = message;
 }
 
-function showBonusMessage(bonusTokens) {
-    const plural = bonusTokens === 1 ? '' : 's';
+function showBonusMessage(caughtCount, bonusPoints, bonusTokens) {
+    const labelIndex = Math.min(caughtCount, CONFIG.MULTI_CATCH_LABELS.length - 1);
+    const catchLabel = CONFIG.MULTI_CATCH_LABELS[labelIndex];
+    const tokenPlural = bonusTokens === 1 ? '' : 's';
+
+    const tokenLine = bonusTokens > 0
+        ? `<div class="bonus-extra">+${bonusTokens} Bonus Token${tokenPlural}</div>`
+        : '';
 
     const bonusCardHtml = `
-        <div class="bonus-content">
-            <div class="bonus-sparkle">✨</div>
-            <div class="bonus-text">BONUS!</div>
-            <div class="bonus-amount">+${bonusTokens} Token${plural}</div>
-            <div class="bonus-reason">Multi-Catch!</div>
-            <div class="bonus-sparkle">✨</div>
+        <div class="bonus-content multi-catch-${Math.min(caughtCount, 5)}">
+            <div class="bonus-sparkle">${caughtCount >= 4 ? '💥' : '✨'}</div>
+            <div class="bonus-text">${catchLabel}</div>
+            <div class="bonus-amount">+${bonusPoints} Points</div>
+            <div class="bonus-reason">${caughtCount} plushies in one grab!</div>
+            ${tokenLine}
+            <div class="bonus-sparkle">${caughtCount >= 4 ? '💥' : '✨'}</div>
         </div>
     `;
+
+    const statusMsg = `🎉 ${catchLabel} +${bonusPoints} points${bonusTokens > 0 ? ` & +${bonusTokens} token${tokenPlural}` : ''}!`;
 
     const elapsedSinceShiny = Date.now() - gameState.lastShinyCatchAt;
     const delayMs = elapsedSinceShiny < CONFIG.SHINY_TO_BONUS_DELAY_MS
@@ -698,7 +921,7 @@ function showBonusMessage(bonusTokens) {
         playSound('bonus');
         showBonusCard(
             bonusCardHtml,
-            `🎉 Bonus! +${bonusTokens} token${plural} for multi-catch!`,
+            statusMsg,
             CONFIG.BONUS_DISPLAY_MS
         );
     };
@@ -763,22 +986,36 @@ function wait(ms) {
     return new Promise(resolve => setTimeout(resolve, ms));
 }
 
-// Generate Report Card
+// Generate Report Card (mirrors splash screen content for PNG export)
 function generateReportCard() {
-    // Populate stats
+    // Title
+    document.getElementById('report-title').textContent = gameState.isPerfectGame
+        ? '🎊 PERFECT GAME! 🎊'
+        : '🎉 Game Over! 🎉';
+
+    // Stats
     document.getElementById('report-score').textContent = gameState.score;
     document.getElementById('report-tickets').textContent = gameState.tickets;
     document.getElementById('report-count').textContent = gameState.caughtPrizes.length;
 
-    // Show perfect badge if applicable
-    const perfectBadge = document.getElementById('report-perfect-badge');
-    if (gameState.isPerfectGame) {
-        perfectBadge.style.display = 'block';
+    // Perfect badge
+    document.getElementById('report-perfect-badge').style.display =
+        gameState.isPerfectGame ? 'block' : 'none';
+
+    // Token bonus
+    const tokenBonusEl = document.getElementById('report-token-bonus');
+    if (gameState.lastTokenBonus > 0) {
+        const tokensLeft = gameState.lastTokensLeft;
+        const multiplier = Math.pow(tokensLeft, 3);
+        document.getElementById('report-token-bonus-tokens').textContent = tokensLeft;
+        document.getElementById('report-token-bonus-multiplier').textContent = `×${multiplier}`;
+        document.getElementById('report-token-bonus-points').textContent = `+${gameState.lastTokenBonus.toLocaleString()}`;
+        tokenBonusEl.style.display = 'block';
     } else {
-        perfectBadge.style.display = 'none';
+        tokenBonusEl.style.display = 'none';
     }
 
-    // Populate plushies grid
+    // Plushies grid
     const plushiesGrid = document.getElementById('report-plushies');
     plushiesGrid.innerHTML = '';
 
@@ -791,18 +1028,18 @@ function generateReportCard() {
 
         const plushieSVG = PlushieFactory.createPlushieSVG(
             PlushieFactory.getPrizeType(prize.emoji),
-            90
+            70
         );
 
         plushieItem.innerHTML = `
             ${plushieSVG}
-            <div class="report-plushie-name">${prize.shiny ? '✨ Shiny ' : ''}${prize.name}</div>
+            <div class="report-plushie-name">${prize.shiny ? '✨ ' : ''}${prize.name}</div>
         `;
 
         plushiesGrid.appendChild(plushieItem);
     });
 
-    // Add date
+    // Date
     const now = new Date();
     const dateStr = now.toLocaleDateString('en-US', {
         year: 'numeric',
@@ -812,11 +1049,16 @@ function generateReportCard() {
         minute: '2-digit'
     });
     document.getElementById('report-date').textContent = dateStr;
+
+    // Add kaomoji decorations to report card
+    populateKaomojiDecorations(document.querySelector('.report-card-content'), 'report-kaomoji');
 }
 
 // Export Report Card as PNG
-async function exportReportCard() {
-    const exportBtn = document.getElementById('export-btn');
+async function exportReportCard(triggerBtn) {
+    const exportBtn = triggerBtn instanceof HTMLElement
+        ? triggerBtn
+        : document.getElementById('splash-export-btn');
     const originalText = exportBtn.textContent;
 
     try {
@@ -838,7 +1080,7 @@ async function exportReportCard() {
 
         // Capture the report card
         const canvas = await html2canvas(reportCard, {
-            backgroundColor: '#FFE4F5',
+            backgroundColor: '#0a0015',
             scale: 2,
             logging: false,
             useCORS: true
@@ -877,8 +1119,8 @@ async function exportReportCard() {
 
 // Initialize on load
 window.addEventListener('load', () => {
-    console.log('Window loaded, setting up game...');
-    console.log('PlushieFactory available:', typeof PlushieFactory !== 'undefined');
+
+
 
     try {
         // Prime audio only after a user interaction to satisfy autoplay policies.
@@ -886,7 +1128,13 @@ window.addEventListener('load', () => {
 
         // Set up button event listeners
         document.getElementById('reset-btn').addEventListener('click', initGame);
-        document.getElementById('export-btn').addEventListener('click', exportReportCard);
+        document.getElementById('export-btn').addEventListener('click', () => exportReportCard(document.getElementById('export-btn')));
+
+        // Splash screen buttons
+        document.getElementById('splash-export-btn').addEventListener('click', () => {
+            exportReportCard(document.getElementById('splash-export-btn'));
+        });
+        document.getElementById('splash-new-game-btn').addEventListener('click', initGame);
 
         const soundBtn = document.getElementById('sound-btn');
         if (soundBtn) {
@@ -923,7 +1171,7 @@ window.addEventListener('load', () => {
             }
         });
 
-        console.log('Event listeners set up');
+
 
         // Initialize the game
         initGame();
