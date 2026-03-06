@@ -119,16 +119,6 @@
                             <circle cx="350" cy="375" r="2" fill="#FF1493" opacity="0.5"/>
                         </g>
                     </g>
-
-                    <!-- Collection bin below -->
-                    <g id="collection-bin">
-                        <rect x="260" y="560" width="180" height="60" fill="none" stroke="#9966FF" stroke-width="2" rx="5" opacity="0.6"/>
-                        <line x1="270" y1="575" x2="430" y2="575" stroke="#9966FF" stroke-width="1" opacity="0.4"/>
-                        <text x="350" y="600" text-anchor="middle" font-size="10" fill="#9966FF" font-family="monospace" opacity="0.6">CATCH BIN</text>
-                    </g>
-
-                    <!-- Bottom connector -->
-                    <line x1="350" y1="370" x2="350" y2="560" stroke="#9966FF" stroke-width="1.5" opacity="0.5"/>
                 </svg>
 
                 <!-- Kept for compatibility with older DOM hooks -->
@@ -144,13 +134,8 @@
 
         <!-- Controls -->
         <div class="controls">
-            <button id="up-btn" class="control-btn">⬆ UP</button>
-            <div class="horizontal-controls">
-                <button id="left-btn" class="control-btn">⬅ LEFT</button>
-                <button id="grab-btn" class="control-btn grab">✋ GRAB</button>
-                <button id="right-btn" class="control-btn">RIGHT ➡</button>
-            </div>
-            <button id="down-btn" class="control-btn">⬇ DOWN</button>
+            <p class="controls-hint">Use Arrow Keys to move · Space/Enter to grab</p>
+            <button id="sound-btn" class="control-btn sound-btn" aria-pressed="true">🔊 SOUND ON</button>
             <button id="reset-btn" class="control-btn reset-btn">🔄 NEW GAME</button>
             <button id="export-btn" class="control-btn export-btn" style="display: none;">📸 EXPORT REPORT CARD</button>
         </div>
