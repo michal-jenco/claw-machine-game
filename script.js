@@ -80,6 +80,42 @@ const KAOMOJIS = [
     '(⁠≧⁠◡⁠≦⁠)⁠♡', 'ヾ(◕ᗜ◕)ﾉ✿', '(◕‿◕)☆', '(✿ᵕᴗᵕ)ノ'
 ];
 
+// ===== Persistent Game History (localStorage) =====
+const HISTORY_KEY = 'kawaiiClawGameHistory';
+const MAX_HISTORY = 500;
+
+const GameHistory = {
+    getAll() {
+        try {
+            return JSON.parse(localStorage.getItem(HISTORY_KEY)) || [];
+        } catch { return []; }
+    },
+
+    save(record) {
+        const history = this.getAll();
+        history.unshift(record); // newest first
+        if (history.length > MAX_HISTORY) history.length = MAX_HISTORY;
+        localStorage.setItem(HISTORY_KEY, JSON.stringify(history));
+    },
+
+    getLifetimeStats() {
+        const history = this.getAll();
+        return {
+            totalGames: history.length,
+            lifetimeScore: history.reduce((s, r) => s + r.score, 0),
+            lifetimeTickets: history.reduce((s, r) => s + r.tickets, 0),
+            totalPlushies: history.reduce((s, r) => s + r.plushiesCaught, 0),
+            totalShinies: history.reduce((s, r) => s + r.shinyCaught, 0),
+            perfectGames: history.filter(r => r.isPerfectGame).length,
+            bestScore: history.length ? Math.max(...history.map(r => r.score)) : 0,
+        };
+    },
+
+    clear() {
+        localStorage.removeItem(HISTORY_KEY);
+    }
+};
+
 function getRandomKaomojis(count) {
     const shuffled = [...KAOMOJIS].sort(() => Math.random() - 0.5);
     return shuffled.slice(0, count);
@@ -774,6 +810,7 @@ async function moveClawUp() {
 // Toggle button states
 function toggleButtons(enabled) {
     document.querySelectorAll('.control-btn').forEach(btn => {
+        if (btn.id === 'stats-btn') return; // always enabled
         btn.disabled = !enabled;
         if (!enabled) btn.style.opacity = '0.5';
         else btn.style.opacity = '1';
@@ -799,6 +836,19 @@ function endGame(isPerfect = false) {
     }
     gameState.lastTokenBonus = tokenBonus;
     gameState.lastTokensLeft = tokensLeft;
+
+    // Save game result to history
+    GameHistory.save({
+        date: new Date().toISOString(),
+        score: gameState.score,
+        tickets: gameState.tickets,
+        plushiesCaught: gameState.caughtPrizes.length,
+        shinyCaught: gameState.caughtPrizes.filter(p => p.shiny).length,
+        isPerfectGame: isPerfect,
+        tokensLeft,
+        tokenBonus,
+        prizes: gameState.caughtPrizes.map(p => ({ emoji: p.emoji, name: p.name, shiny: !!p.shiny })),
+    });
 
     let message;
     if (isPerfect) {
@@ -1054,6 +1104,111 @@ function generateReportCard() {
     populateKaomojiDecorations(document.querySelector('.report-card-content'), 'report-kaomoji');
 }
 
+// Generate Report Card from a saved history record
+function generateReportCardFromRecord(record) {
+    document.getElementById('report-title').textContent = record.isPerfectGame
+        ? '🎊 PERFECT GAME! 🎊'
+        : '🎉 Game Over! 🎉';
+
+    document.getElementById('report-score').textContent = record.score;
+    document.getElementById('report-tickets').textContent = record.tickets;
+    document.getElementById('report-count').textContent = record.plushiesCaught;
+
+    document.getElementById('report-perfect-badge').style.display =
+        record.isPerfectGame ? 'block' : 'none';
+
+    const tokenBonusEl = document.getElementById('report-token-bonus');
+    if (record.tokenBonus > 0) {
+        const multiplier = Math.pow(record.tokensLeft, 3);
+        document.getElementById('report-token-bonus-tokens').textContent = record.tokensLeft;
+        document.getElementById('report-token-bonus-multiplier').textContent = `×${multiplier}`;
+        document.getElementById('report-token-bonus-points').textContent = `+${record.tokenBonus.toLocaleString()}`;
+        tokenBonusEl.style.display = 'block';
+    } else {
+        tokenBonusEl.style.display = 'none';
+    }
+
+    const plushiesGrid = document.getElementById('report-plushies');
+    plushiesGrid.innerHTML = '';
+
+    if (record.prizes && record.prizes.length > 0) {
+        record.prizes.forEach(prize => {
+            const plushieItem = document.createElement('div');
+            plushieItem.className = 'report-plushie-item';
+            if (prize.shiny) plushieItem.classList.add('report-shiny-plushie');
+
+            const plushieSVG = PlushieFactory.createPlushieSVG(
+                PlushieFactory.getPrizeType(prize.emoji), 70
+            );
+            plushieItem.innerHTML = `
+                ${plushieSVG}
+                <div class="report-plushie-name">${prize.shiny ? '✨ ' : ''}${prize.name}</div>
+            `;
+            plushiesGrid.appendChild(plushieItem);
+        });
+    }
+
+    const d = new Date(record.date);
+    document.getElementById('report-date').textContent = d.toLocaleDateString('en-US', {
+        year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit'
+    });
+
+    populateKaomojiDecorations(document.querySelector('.report-card-content'), 'report-kaomoji');
+}
+
+// Export a report card from a history record by index
+async function exportHistoryReportCard(historyIndex, btnEl) {
+    const history = GameHistory.getAll();
+    const record = history[historyIndex];
+    if (!record) return;
+
+    const originalText = btnEl.textContent;
+    try {
+        btnEl.disabled = true;
+        btnEl.textContent = '⏳';
+
+        generateReportCardFromRecord(record);
+
+        const reportCard = document.getElementById('report-card');
+        reportCard.style.display = 'block';
+        reportCard.style.position = 'fixed';
+        reportCard.style.left = '-9999px';
+
+        await wait(100);
+
+        const canvas = await html2canvas(reportCard, {
+            backgroundColor: '#0a0015',
+            scale: 2,
+            logging: false,
+            useCORS: true
+        });
+
+        reportCard.style.display = 'none';
+
+        canvas.toBlob(blob => {
+            const url = URL.createObjectURL(blob);
+            const link = document.createElement('a');
+            const timestamp = new Date(record.date).getTime();
+            link.download = `kawaii-plushie-report-${timestamp}.png`;
+            link.href = url;
+            link.click();
+            URL.revokeObjectURL(url);
+
+            btnEl.textContent = '✅';
+            setTimeout(() => {
+                btnEl.textContent = originalText;
+                btnEl.disabled = false;
+            }, 1500);
+        });
+    } catch (error) {
+        btnEl.textContent = '❌';
+        setTimeout(() => {
+            btnEl.textContent = originalText;
+            btnEl.disabled = false;
+        }, 1500);
+    }
+}
+
 // Export Report Card as PNG
 async function exportReportCard(triggerBtn) {
     const exportBtn = triggerBtn instanceof HTMLElement
@@ -1117,6 +1272,107 @@ async function exportReportCard(triggerBtn) {
     }
 }
 
+// ===== Stats Modal =====
+let statsSortField = 'score';
+let statsSortAsc = false; // descending by default
+
+function openStatsModal() {
+    const overlay = document.getElementById('stats-overlay');
+    renderStatsModal();
+    overlay.style.display = 'flex';
+}
+
+function closeStatsModal() {
+    document.getElementById('stats-overlay').style.display = 'none';
+}
+
+function renderStatsModal() {
+    const stats = GameHistory.getLifetimeStats();
+    const history = GameHistory.getAll();
+
+    // Lifetime stats
+    document.getElementById('stats-total-games').textContent = stats.totalGames.toLocaleString();
+    document.getElementById('stats-lifetime-score').textContent = stats.lifetimeScore.toLocaleString();
+    document.getElementById('stats-lifetime-tickets').textContent = stats.lifetimeTickets.toLocaleString();
+    document.getElementById('stats-total-plushies').textContent = stats.totalPlushies.toLocaleString();
+    document.getElementById('stats-total-shinies').textContent = stats.totalShinies.toLocaleString();
+    document.getElementById('stats-perfect-games').textContent = stats.perfectGames.toLocaleString();
+    document.getElementById('stats-best-score').textContent = stats.bestScore.toLocaleString();
+
+    // Sort history (keep original index for export)
+    const indexed = history.map((r, i) => ({ ...r, _idx: i }));
+    const sorted = indexed.sort((a, b) => {
+        let va, vb;
+        if (statsSortField === 'date') {
+            va = new Date(a.date).getTime();
+            vb = new Date(b.date).getTime();
+        } else {
+            va = a[statsSortField];
+            vb = b[statsSortField];
+        }
+        return statsSortAsc ? va - vb : vb - va;
+    });
+
+    // Update sort indicators
+    document.querySelectorAll('.stats-th-sort').forEach(th => {
+        const field = th.dataset.sort;
+        const arrow = th.querySelector('.sort-arrow');
+        if (field === statsSortField) {
+            th.classList.add('active-sort');
+            arrow.textContent = statsSortAsc ? ' ▲' : ' ▼';
+        } else {
+            th.classList.remove('active-sort');
+            arrow.textContent = '';
+        }
+    });
+
+    // Render table
+    const tbody = document.getElementById('stats-history-body');
+    const emptyMsg = document.getElementById('stats-empty');
+
+    if (sorted.length === 0) {
+        tbody.innerHTML = '';
+        emptyMsg.style.display = 'block';
+        return;
+    }
+
+    emptyMsg.style.display = 'none';
+    tbody.innerHTML = sorted.map(r => {
+        const d = new Date(r.date);
+        const dateStr = d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+        const timeStr = d.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
+        const perfectClass = r.isPerfectGame ? 'stats-row-perfect' : '';
+        const perfectBadge = r.isPerfectGame ? ' ⭐' : '';
+        const shinyBadge = r.shinyCaught > 0 ? ` ✨${r.shinyCaught}` : '';
+        const hasPrizes = r.prizes && r.prizes.length > 0;
+        const exportTitle = hasPrizes ? 'Export report card' : 'Export report card (no plushie data for old games)';
+        return `<tr class="${perfectClass}">
+            <td>${dateStr}<br><span class="stats-time">${timeStr}</span></td>
+            <td class="stats-score-col">${r.score.toLocaleString()}${perfectBadge}</td>
+            <td>${r.tickets.toLocaleString()}</td>
+            <td>${r.plushiesCaught}${shinyBadge}</td>
+            <td class="stats-export-col"><button class="stats-row-export-btn" title="${exportTitle}" onclick="exportHistoryReportCard(${r._idx}, this)">📸</button></td>
+        </tr>`;
+    }).join('');
+}
+
+function handleStatsSort(field) {
+    if (statsSortField === field) {
+        statsSortAsc = !statsSortAsc;
+    } else {
+        statsSortField = field;
+        statsSortAsc = false;
+    }
+    renderStatsModal();
+}
+
+function clearGameHistory() {
+    if (confirm('Clear all game history? This cannot be undone!')) {
+        GameHistory.clear();
+        renderStatsModal();
+    }
+}
+
 // Initialize on load
 window.addEventListener('load', () => {
 
@@ -1136,6 +1392,17 @@ window.addEventListener('load', () => {
         });
         document.getElementById('splash-new-game-btn').addEventListener('click', initGame);
 
+        // Stats modal
+        document.getElementById('stats-btn').addEventListener('click', openStatsModal);
+        document.getElementById('stats-close-btn').addEventListener('click', closeStatsModal);
+        document.getElementById('stats-clear-btn').addEventListener('click', clearGameHistory);
+        document.getElementById('stats-overlay').addEventListener('click', (e) => {
+            if (e.target.id === 'stats-overlay') closeStatsModal();
+        });
+        document.querySelectorAll('.stats-th-sort').forEach(th => {
+            th.addEventListener('click', () => handleStatsSort(th.dataset.sort));
+        });
+
         const soundBtn = document.getElementById('sound-btn');
         if (soundBtn) {
             soundBtn.addEventListener('click', toggleSound);
@@ -1144,6 +1411,15 @@ window.addEventListener('load', () => {
 
         // Set up keyboard controls
         document.addEventListener('keydown', (e) => {
+            // Close stats modal with Escape
+            if (e.key === 'Escape') {
+                const statsOverlay = document.getElementById('stats-overlay');
+                if (statsOverlay.style.display === 'flex') {
+                    closeStatsModal();
+                    return;
+                }
+            }
+
             if (gameState.gameOver || gameState.isGrabbing) return;
 
             switch (e.key) {

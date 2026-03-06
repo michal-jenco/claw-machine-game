@@ -1401,3 +1401,310 @@ h1 {
     opacity: 0.6;
 }
 
+/* ===== Stats Modal ===== */
+.stats-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    background: rgba(10, 0, 21, 0.88);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    z-index: 1001;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    animation: splashFadeIn 0.3s ease-out;
+}
+
+.stats-card {
+    background: linear-gradient(135deg, #0f0020 0%, #1a0033 50%, #150028 100%);
+    border: 3px solid #00FFFF;
+    border-radius: 20px;
+    padding: 24px 28px;
+    max-width: 640px;
+    width: 92vw;
+    height: 95vh;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    box-shadow:
+        0 0 40px rgba(0, 255, 255, 0.3),
+        0 0 80px rgba(255, 20, 147, 0.1),
+        inset 0 0 30px rgba(0, 255, 255, 0.05);
+    animation: splashCardPop 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    text-align: center;
+    position: relative;
+}
+
+.stats-close-btn {
+    position: absolute;
+    top: 12px;
+    right: 16px;
+    background: none;
+    border: 2px solid rgba(255, 20, 147, 0.4);
+    color: #FF1493;
+    font-size: 1.2em;
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    cursor: pointer;
+    transition: all 0.2s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.stats-close-btn:hover {
+    background: rgba(255, 20, 147, 0.2);
+    border-color: #FF1493;
+    transform: scale(1.1);
+}
+
+.stats-header {
+    margin-bottom: 18px;
+    padding-bottom: 12px;
+    border-bottom: 2px dashed rgba(0, 255, 255, 0.3);
+    flex-shrink: 0;
+}
+
+.stats-title {
+    font-size: 1.6em;
+    font-weight: 900;
+    color: #00FFFF;
+    text-shadow: 0 0 15px rgba(0, 255, 255, 0.5);
+    font-family: 'Courier New', monospace;
+    letter-spacing: 2px;
+    margin-bottom: 4px;
+}
+
+.stats-subtitle {
+    font-size: 0.95em;
+    color: #FFB6E1;
+    font-weight: bold;
+    opacity: 0.7;
+}
+
+/* Lifetime Stats Grid */
+.stats-lifetime {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 10px;
+    margin-bottom: 18px;
+    flex-shrink: 0;
+}
+
+.stats-lifetime-item {
+    background: rgba(0, 255, 255, 0.06);
+    border: 1.5px solid rgba(0, 255, 255, 0.2);
+    border-radius: 10px;
+    padding: 10px 8px;
+}
+
+.stats-lifetime-wide {
+    grid-column: 1 / -1;
+}
+
+.stats-lifetime-label {
+    display: block;
+    font-size: 0.7em;
+    color: #00FFFF;
+    font-weight: bold;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    margin-bottom: 4px;
+    opacity: 0.8;
+}
+
+.stats-lifetime-value {
+    display: block;
+    font-size: 1.5em;
+    font-weight: 900;
+    color: #FFD700;
+    font-family: 'Courier New', monospace;
+    text-shadow: 0 0 8px rgba(255, 215, 0, 0.4);
+}
+
+.stats-lifetime-value.stats-best {
+    color: #FF1493;
+    text-shadow: 0 0 8px rgba(255, 20, 147, 0.5);
+}
+
+.stats-lifetime-value.stats-shiny {
+    color: #FFD700;
+    text-shadow: 0 0 10px rgba(255, 215, 0, 0.6);
+}
+
+.stats-lifetime-value.stats-perfect {
+    color: #00FFFF;
+    text-shadow: 0 0 10px rgba(0, 255, 255, 0.5);
+}
+
+/* Game History */
+.stats-history-section {
+    margin-bottom: 14px;
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+    overflow: hidden;
+}
+
+.stats-history-title {
+    font-size: 1.1em;
+    color: #FF1493;
+    font-weight: bold;
+    margin-bottom: 10px;
+    text-shadow: 0 0 8px rgba(255, 20, 147, 0.3);
+}
+
+.stats-table-wrap {
+    flex: 1;
+    overflow-y: auto;
+    border: 1px solid rgba(0, 255, 255, 0.15);
+    border-radius: 10px;
+    background: rgba(0, 0, 0, 0.2);
+    min-height: 0;
+}
+
+.stats-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.85em;
+}
+
+.stats-table thead {
+    position: sticky;
+    top: 0;
+    z-index: 2;
+}
+
+.stats-table th {
+    background: rgba(0, 255, 255, 0.1);
+    color: #00FFFF;
+    font-weight: 900;
+    font-size: 0.85em;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    padding: 10px 8px;
+    border-bottom: 2px solid rgba(0, 255, 255, 0.2);
+    cursor: pointer;
+    user-select: none;
+    white-space: nowrap;
+    transition: background 0.15s;
+}
+
+.stats-table th:hover {
+    background: rgba(0, 255, 255, 0.18);
+}
+
+.stats-table th.active-sort {
+    color: #FFD700;
+    background: rgba(255, 215, 0, 0.1);
+    border-bottom-color: rgba(255, 215, 0, 0.3);
+}
+
+.sort-arrow {
+    font-size: 0.75em;
+    color: #FFD700;
+}
+
+.stats-table td {
+    padding: 8px;
+    color: #FFB6E1;
+    border-bottom: 1px solid rgba(255, 20, 147, 0.08);
+    font-weight: bold;
+}
+
+.stats-table tr:hover td {
+    background: rgba(255, 20, 147, 0.06);
+}
+
+.stats-table tr.stats-row-perfect td {
+    color: #FFD700;
+}
+
+.stats-score-col {
+    font-family: 'Courier New', monospace;
+    color: #FFD700 !important;
+}
+
+.stats-time {
+    font-size: 0.8em;
+    opacity: 0.5;
+    color: #00FFFF;
+}
+
+.stats-empty {
+    color: #FFB6E1;
+    font-size: 1em;
+    padding: 30px;
+    opacity: 0.6;
+    font-style: italic;
+    line-height: 1.6;
+}
+
+.stats-clear-btn {
+    background: transparent;
+    border: 1.5px solid rgba(255, 20, 147, 0.25);
+    color: rgba(255, 20, 147, 0.5);
+    font-size: 0.75em;
+    font-weight: bold;
+    padding: 6px 14px;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.2s;
+    margin-top: 4px;
+    flex-shrink: 0;
+}
+
+.stats-clear-btn:hover {
+    border-color: #FF1493;
+    color: #FF1493;
+    background: rgba(255, 20, 147, 0.1);
+}
+
+.stats-btn {
+    background: linear-gradient(to bottom, #008B8B, #006666);
+    border-color: rgba(0, 255, 255, 0.5);
+}
+
+.stats-btn:hover {
+    background: linear-gradient(to bottom, #006666, #004D4D);
+    box-shadow: 0 0 20px rgba(0, 255, 255, 0.4);
+}
+
+.stats-th-export {
+    width: 42px;
+    padding: 0 !important;
+}
+
+.stats-export-col {
+    padding: 4px !important;
+    width: 42px;
+}
+
+.stats-row-export-btn {
+    background: rgba(0, 255, 255, 0.08);
+    border: 1.5px solid rgba(0, 255, 255, 0.25);
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 0.95em;
+    padding: 4px 8px;
+    transition: all 0.15s;
+    line-height: 1;
+}
+
+.stats-row-export-btn:hover {
+    background: rgba(0, 255, 255, 0.18);
+    border-color: #00FFFF;
+    transform: scale(1.1);
+}
+
+.stats-row-export-btn:disabled {
+    opacity: 0.5;
+    cursor: default;
+    transform: none;
+}
+
