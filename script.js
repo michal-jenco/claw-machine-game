@@ -33,14 +33,15 @@ const CONFIG = {
     CLAW_ASSEMBLY_BASE_Y: 300,
     CLAW_SPEED: 8,
     CLAW_RADIUS: 40,
+    CLAW_CATCH_OFFSET_Y: 41, // offset from clawY to geometric center of claw SVG assembly
     MAX_TOKENS: 5,
     PRIZE_COUNT: 12,
     PERFECT_GAME_BONUS: 500,
     BONUS_DISPLAY_MS: 2000,
     PERFECT_BONUS_DISPLAY_MS: 2000,
     SHINY_BONUS_POINTS: 1000,
-    SHINY_TO_BONUS_DELAY_MS: 4200,
-    MULTI_CATCH_BASE_BONUS: 50,       // Base bonus points for catching 2+
+    SHINY_TO_BONUS_DELAY_MS: 2000,
+    MULTI_CATCH_BASE_BONUS: 100,       // Base bonus points for catching 2+ (scales quadratically)
     MULTI_CATCH_LABELS: [
         '',                  // 0 - unused
         '',                  // 1 - no bonus for single catch
@@ -531,10 +532,11 @@ function findSpawnPosition(existingPrizes) {
 
 // Update UI elements
 function updateUI() {
-    document.getElementById('score').textContent = gameState.score;
-    document.getElementById('tickets').textContent = gameState.tickets;
+    document.getElementById('score').textContent = gameState.score.toLocaleString();
+    document.getElementById('tickets').textContent = gameState.tickets.toLocaleString();
     document.getElementById('tokens').textContent = gameState.tokens;
 }
+
 
 // Move claw based on direction
 function moveClaw(direction) {
@@ -656,8 +658,8 @@ async function grabPrize() {
         const caughtCount = await checkPrizeCollision();
 
         if (caughtCount > 1) {
-            // Exponential score bonus: base × 2^(count-1)
-            const bonusPoints = CONFIG.MULTI_CATCH_BASE_BONUS * Math.pow(2, caughtCount - 1);
+            // Quadratic score bonus: base × count²
+            const bonusPoints = CONFIG.MULTI_CATCH_BASE_BONUS * caughtCount * caughtCount;
             // Flat token bonus: +1 for any multi-catch (balanced)
             const bonusTokens = Math.min(CONFIG.MAX_TOKENS - gameState.tokens, 1);
 
@@ -691,7 +693,7 @@ async function grabPrize() {
 
         if (allCaught) {
             // Perfect game - wait for bonus message then end
-            await wait(4500);
+            await wait(2500);
             gameState.isGrabbing = false;
             updateUI();
             endGame(true);
@@ -760,6 +762,7 @@ async function moveClawDown() {
 // Check if claw caught any prizes
 async function checkPrizeCollision() {
     const clawRadius = CONFIG.CLAW_RADIUS;
+    const catchCenterY = gameState.clawY + CONFIG.CLAW_CATCH_OFFSET_Y;
     let caughtCount = 0;
 
     for (const prize of gameState.prizes) {
@@ -769,7 +772,7 @@ async function checkPrizeCollision() {
         if (!prizeEl) continue;
 
         const dx = gameState.clawX - prize.x;
-        const dy = gameState.clawY - prize.y;
+        const dy = catchCenterY - prize.y;
         const distance = Math.hypot(dx, dy);
 
         if (distance < clawRadius + CONFIG.PRIZE_RADIUS * 0.9) {
@@ -884,15 +887,15 @@ function endGame(isPerfect = false) {
 
     let message;
     if (isPerfect) {
-        message = `🎊🎉 PERFECT GAME! 🎉🎊 All Plushies Caught! | Final Score: ${gameState.score} | Tickets Won: ${gameState.tickets}`;
+        message = `🎊🎉 PERFECT GAME! 🎉🎊 All Plushies Caught! | Final Score: ${gameState.score.toLocaleString()} | Tickets Won: ${gameState.tickets.toLocaleString()}`;
     } else {
-        message = `🎉 Game Over! Final Score: ${gameState.score} | Tickets Won: ${gameState.tickets}`;
+        message = `🎉 Game Over! Final Score: ${gameState.score.toLocaleString()} | Tickets Won: ${gameState.tickets.toLocaleString()}`;
         playSound('gameOver');
     }
     displayGameStatus(message);
 
     // Show the splash screen after a brief pause
-    setTimeout(() => showSplashScreen(isPerfect), isPerfect ? 200 : 800);
+    setTimeout(() => showSplashScreen(isPerfect), isPerfect ? 200 : 400);
 }
 
 function showSplashScreen(isPerfect) {
@@ -904,8 +907,8 @@ function showSplashScreen(isPerfect) {
         : '🎉 Game Over! 🎉';
 
     // Stats
-    document.getElementById('splash-score').textContent = gameState.score;
-    document.getElementById('splash-tickets').textContent = gameState.tickets;
+    document.getElementById('splash-score').textContent = gameState.score.toLocaleString();
+    document.getElementById('splash-tickets').textContent = gameState.tickets.toLocaleString();
     document.getElementById('splash-count').textContent = gameState.caughtPrizes.length;
 
     // Perfect badge
@@ -917,7 +920,7 @@ function showSplashScreen(isPerfect) {
         const tokensLeft = gameState.lastTokensLeft;
         const multiplier = Math.pow(tokensLeft, 3);
         document.getElementById('splash-token-bonus-tokens').textContent = tokensLeft;
-        document.getElementById('splash-token-bonus-multiplier').textContent = `×${multiplier}`;
+        document.getElementById('splash-token-bonus-multiplier').textContent = `×${multiplier.toLocaleString()}`;
         document.getElementById('splash-token-bonus-points').textContent = `+${gameState.lastTokenBonus.toLocaleString()}`;
         tokenBonusBadge.style.display = 'block';
     } else {
@@ -985,14 +988,14 @@ function showBonusMessage(caughtCount, bonusPoints, bonusTokens) {
         <div class="bonus-content multi-catch-${Math.min(caughtCount, 5)}">
             <div class="bonus-sparkle">${caughtCount >= 4 ? '💥' : '✨'}</div>
             <div class="bonus-text">${catchLabel}</div>
-            <div class="bonus-amount">+${bonusPoints} Points</div>
+            <div class="bonus-amount">+${bonusPoints.toLocaleString()} Points</div>
             <div class="bonus-reason">${caughtCount} plushies in one grab!</div>
             ${tokenLine}
             <div class="bonus-sparkle">${caughtCount >= 4 ? '💥' : '✨'}</div>
         </div>
     `;
 
-    const statusMsg = `🎉 ${catchLabel} +${bonusPoints} points${bonusTokens > 0 ? ` & +${bonusTokens} token${tokenPlural}` : ''}!`;
+    const statusMsg = `🎉 ${catchLabel} +${bonusPoints.toLocaleString()} points${bonusTokens > 0 ? ` & +${bonusTokens} token${tokenPlural}` : ''}!`;
 
     const elapsedSinceShiny = Date.now() - gameState.lastShinyCatchAt;
     const delayMs = elapsedSinceShiny < CONFIG.SHINY_TO_BONUS_DELAY_MS
@@ -1017,9 +1020,11 @@ function showBonusMessage(caughtCount, bonusPoints, bonusTokens) {
 }
 
 function showPerfectGameBonus() {
-    // Award massive bonus
-    gameState.score += CONFIG.PERFECT_GAME_BONUS;
-    gameState.tickets += Math.floor(CONFIG.PERFECT_GAME_BONUS / 5);
+    // Award massive quadratic bonus: flat base + score² / 100
+    const quadraticBonus = Math.floor(gameState.score * gameState.score / 100);
+    const perfectBonus = CONFIG.PERFECT_GAME_BONUS + quadraticBonus;
+    gameState.score += perfectBonus;
+    gameState.tickets += Math.floor(perfectBonus / 5);
     updateUI();
     playSound('perfect');
 
@@ -1027,7 +1032,7 @@ function showPerfectGameBonus() {
         <div class="bonus-content perfect-game">
             <div class="bonus-sparkle">🎊</div>
             <div class="bonus-text">PERFECT GAME!</div>
-            <div class="bonus-amount perfect">+${CONFIG.PERFECT_GAME_BONUS} POINTS</div>
+            <div class="bonus-amount perfect">+${perfectBonus.toLocaleString()} POINTS</div>
             <div class="bonus-reason">ALL PLUSHIES CAUGHT!</div>
             <div class="bonus-sparkle">🎊</div>
         </div>
@@ -1035,7 +1040,7 @@ function showPerfectGameBonus() {
 
     showBonusCard(
         perfectCardHtml,
-        `🎊🎉 PERFECT GAME! +${CONFIG.PERFECT_GAME_BONUS} BONUS POINTS! 🎉🎊`,
+        `🎊🎉 PERFECT GAME! +${perfectBonus.toLocaleString()} BONUS POINTS! 🎉🎊`,
         CONFIG.PERFECT_BONUS_DISPLAY_MS
     );
 }
@@ -1045,7 +1050,7 @@ function showShinyCatchMessage(prize, shinyBonus) {
         <div class="bonus-content shiny-catch">
             <div class="bonus-sparkle">✨</div>
             <div class="bonus-text">SHINY CATCH!</div>
-            <div class="bonus-amount perfect">+${shinyBonus} POINTS</div>
+            <div class="bonus-amount perfect">+${shinyBonus.toLocaleString()} POINTS</div>
             <div class="bonus-reason">${prize.name} (Rare Variant) × 10</div>
             <div class="bonus-sparkle">✨</div>
         </div>
@@ -1053,7 +1058,7 @@ function showShinyCatchMessage(prize, shinyBonus) {
 
     showBonusCard(
         shinyCardHtml,
-        `✨ SHINY BONUS! +${shinyBonus} points for ${prize.name}!`,
+        `✨ SHINY BONUS! +${shinyBonus.toLocaleString()} points for ${prize.name}!`,
         CONFIG.BONUS_DISPLAY_MS
     );
 }
@@ -1076,8 +1081,8 @@ function generateReportCard() {
         : '🎉 Game Over! 🎉';
 
     // Stats
-    document.getElementById('report-score').textContent = gameState.score;
-    document.getElementById('report-tickets').textContent = gameState.tickets;
+    document.getElementById('report-score').textContent = gameState.score.toLocaleString();
+    document.getElementById('report-tickets').textContent = gameState.tickets.toLocaleString();
     document.getElementById('report-count').textContent = gameState.caughtPrizes.length;
 
     // Perfect badge
@@ -1090,7 +1095,7 @@ function generateReportCard() {
         const tokensLeft = gameState.lastTokensLeft;
         const multiplier = Math.pow(tokensLeft, 3);
         document.getElementById('report-token-bonus-tokens').textContent = tokensLeft;
-        document.getElementById('report-token-bonus-multiplier').textContent = `×${multiplier}`;
+        document.getElementById('report-token-bonus-multiplier').textContent = `×${multiplier.toLocaleString()}`;
         document.getElementById('report-token-bonus-points').textContent = `+${gameState.lastTokenBonus.toLocaleString()}`;
         tokenBonusEl.style.display = 'block';
     } else {
@@ -1142,8 +1147,8 @@ function generateReportCardFromRecord(record) {
         ? '🎊 PERFECT GAME! 🎊'
         : '🎉 Game Over! 🎉';
 
-    document.getElementById('report-score').textContent = record.score;
-    document.getElementById('report-tickets').textContent = record.tickets;
+    document.getElementById('report-score').textContent = record.score.toLocaleString();
+    document.getElementById('report-tickets').textContent = record.tickets.toLocaleString();
     document.getElementById('report-count').textContent = record.plushiesCaught;
 
     document.getElementById('report-perfect-badge').style.display =
@@ -1153,7 +1158,7 @@ function generateReportCardFromRecord(record) {
     if (record.tokenBonus > 0) {
         const multiplier = Math.pow(record.tokensLeft, 3);
         document.getElementById('report-token-bonus-tokens').textContent = record.tokensLeft;
-        document.getElementById('report-token-bonus-multiplier').textContent = `×${multiplier}`;
+        document.getElementById('report-token-bonus-multiplier').textContent = `×${multiplier.toLocaleString()}`;
         document.getElementById('report-token-bonus-points').textContent = `+${record.tokenBonus.toLocaleString()}`;
         tokenBonusEl.style.display = 'block';
     } else {
@@ -1339,8 +1344,8 @@ function renderStatsModal() {
             va = new Date(a.date).getTime();
             vb = new Date(b.date).getTime();
         } else {
-            va = a[statsSortField];
-            vb = b[statsSortField];
+            va = a[statsSortField] ?? 0;
+            vb = b[statsSortField] ?? 0;
         }
         return statsSortAsc ? va - vb : vb - va;
     });
@@ -1378,11 +1383,13 @@ function renderStatsModal() {
         const shinyBadge = r.shinyCaught > 0 ? ` ✨${r.shinyCaught}` : '';
         const hasPrizes = r.prizes && r.prizes.length > 0;
         const exportTitle = hasPrizes ? 'Export report card' : 'Export report card (no plushie data for old games)';
+        const tokensLeftVal = r.tokensLeft != null ? r.tokensLeft : '—';
         return `<tr class="${perfectClass}">
             <td>${dateStr}<br><span class="stats-time">${timeStr}</span></td>
             <td class="stats-score-col">${r.score.toLocaleString()}${perfectBadge}</td>
             <td>${r.tickets.toLocaleString()}</td>
             <td>${r.plushiesCaught}${shinyBadge}</td>
+            <td>${tokensLeftVal}</td>
             <td class="stats-export-col"><button class="stats-row-export-btn" title="${exportTitle}" onclick="exportHistoryReportCard(${r._idx}, this)">📸</button></td>
         </tr>`;
     }).join('');
