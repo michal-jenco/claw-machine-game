@@ -67,6 +67,20 @@ const CONFIG = {
     ]
 };
 
+// Plushie Personalities — shown in detail overlay (collection & plushiedex)
+const PLUSHIE_PERSONALITIES = {
+    'miku':   'Miku is a diva <3 She is always positive, likes to cheer others up, a little bit air-headed but boi can she sing. SEEKAAA~~~~ (forgets lyrics)',
+    'teto':   'She is a more mischievous vocaloid (fight me) than Miku. She always fights for recognition, loves to eat baguettes 🥖 and you can in general trust her. She is a little bit tsundere so be careful when you encounter Teto >_<',
+    'melody': 'Personality pending!! >_<',
+    'kuromi': 'Personality pending!! >_<',
+    'kitty':  'Personality pending!! >_<',
+    'angel':  'Personality pending!! >_<',
+    'sakura': 'Personality pending!! >_<',
+    'purple': 'Personality pending!! >_<',
+    'ribbon': 'Personality pending!! >_<',
+    'star':   'Personality pending!! >_<',
+};
+
 // Kawaii kaomojis for decoration
 const KAOMOJIS = [
     '(◕‿◕✿)', '(ノ◕ヮ◕)ノ*:・゚✧', '(✿◠‿◠)', '(◕ᴗ◕✿)',
@@ -1619,6 +1633,14 @@ function openPlushieDetail(entry) {
         badgesHTML += `<span class="plushie-detail-badge plushie-detail-badge-shiny-pts">✨ ${points * 10} pts when shiny</span>`;
     }
     badgesEl.innerHTML = badgesHTML;
+
+    // Personality
+    const plushieType = PlushieFactory.getPrizeType(entry.emoji);
+    const personality = PLUSHIE_PERSONALITIES[plushieType] || 'Personality pending!! >_<';
+    const personalityEl = document.getElementById('plushie-detail-personality');
+    if (personalityEl) {
+        personalityEl.textContent = personality;
+    }
 
     // Stats
     let statsHTML = `

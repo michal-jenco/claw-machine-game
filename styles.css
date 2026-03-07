@@ -2591,6 +2591,26 @@ h1 {
     font-size: 0.7em;
 }
 
+.plushie-detail-personality {
+    font-size: 0.88em;
+    color: #FFB6E1;
+    font-style: italic;
+    text-align: center;
+    padding: 10px 16px;
+    margin-bottom: 12px;
+    background: rgba(255, 20, 147, 0.08);
+    border: 1.5px solid rgba(255, 20, 147, 0.2);
+    border-radius: 12px;
+    letter-spacing: 0.3px;
+    line-height: 1.5;
+}
+
+.plushie-detail-shiny .plushie-detail-personality {
+    color: #FFD700;
+    background: rgba(255, 215, 0, 0.08);
+    border-color: rgba(255, 215, 0, 0.2);
+}
+
 .plushie-detail-stats {
     display: flex;
     flex-direction: column;
