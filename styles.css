@@ -722,6 +722,39 @@ h1 {
     white-space: nowrap;
 }
 
+.plushiedex-toast-gen {
+    display: inline-block;
+    font-size: 0.75em;
+    font-weight: 900;
+    padding: 1px 5px;
+    border-radius: 4px;
+    margin-left: 2px;
+    margin-right: 2px;
+    vertical-align: middle;
+    letter-spacing: 0.5px;
+}
+
+.plushiedex-toast-gen-1 {
+    background: rgba(0, 255, 255, 0.2);
+    border: 1px solid rgba(0, 255, 255, 0.5);
+    color: #67E8F9;
+    text-shadow: 0 0 6px rgba(0, 255, 255, 0.4);
+}
+
+.plushiedex-toast-gen-2 {
+    background: rgba(255, 82, 82, 0.2);
+    border: 1px solid rgba(255, 82, 82, 0.5);
+    color: #FF8A80;
+    text-shadow: 0 0 6px rgba(255, 82, 82, 0.4);
+}
+
+.plushiedex-toast-gen-3 {
+    background: rgba(102, 187, 106, 0.2);
+    border: 1px solid rgba(102, 187, 106, 0.5);
+    color: #A5D6A7;
+    text-shadow: 0 0 6px rgba(102, 187, 106, 0.4);
+}
+
 @keyframes plushiedexToastPop {
     0% {
         opacity: 0;

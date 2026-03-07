@@ -582,7 +582,12 @@ function showNewPlushiedexToast(prize) {
     const toast = document.createElement('div');
     toast.className = 'plushiedex-new-toast';
     toast.style.top = `${offsetTop}px`;
-    toast.innerHTML = `<span>📖 NEW! ${variant}${prize.name} added to Plushiedex!</span>`;
+
+    const prizeConfig = CONFIG.PRIZE_TYPES.find(t => t.emoji === prize.emoji);
+    const gen = prizeConfig ? prizeConfig.gen : 1;
+    const genTag = `<span class="plushiedex-toast-gen plushiedex-toast-gen-${gen}">G${gen}</span>`;
+
+    toast.innerHTML = `<span>📖 NEW! ${variant}${prize.name} ${genTag} added to Plushiedex!</span>`;
     stage.appendChild(toast);
 
     playSound('plushiedexNew');
