@@ -1,5 +1,3 @@
-
-
 // Game state
 const gameState = {
     score: 0,
@@ -863,7 +861,7 @@ async function moveClawUp() {
 // Toggle button states
 function toggleButtons(enabled) {
     document.querySelectorAll('.control-btn').forEach(btn => {
-        if (btn.id === 'stats-btn' || btn.id === 'collection-btn') return; // always enabled
+        if (btn.id === 'stats-btn' || btn.id === 'collection-btn' || btn.id === 'plushiedex-btn') return; // always enabled
         btn.disabled = !enabled;
         if (!enabled) btn.style.opacity = '0.5';
         else btn.style.opacity = '1';
@@ -1411,6 +1409,172 @@ function renderCollectionModal() {
     });
 }
 
+function openPlushiedex() {
+    renderPlushiedex();
+    document.getElementById('plushiedex-overlay').style.display = 'flex';
+}
+
+function closePlushiedex() {
+    document.getElementById('plushiedex-overlay').style.display = 'none';
+}
+
+function renderPlushiedex() {
+    const history = GameHistory.getAll();
+    const totalTypes = CONFIG.PRIZE_TYPES.length;
+
+    const caughtTypes = new Set();
+    const caughtShinies = new Set();
+    history.forEach(record => {
+        if (!record.prizes) return;
+        record.prizes.forEach(p => {
+            if (p.shiny) {
+                caughtShinies.add(p.emoji);
+            } else {
+                caughtTypes.add(p.emoji);
+            }
+        });
+    });
+
+    const typesFound = caughtTypes.size;
+    const shiniesFound = caughtShinies.size;
+
+    const typesBar = document.getElementById('plushiedex-bar-types');
+    const shinyBar = document.getElementById('plushiedex-bar-shiny');
+    const typesText = document.getElementById('plushiedex-types-text');
+    const shinyText = document.getElementById('plushiedex-shiny-text');
+
+    typesBar.style.width = `${(typesFound / totalTypes) * 100}%`;
+    shinyBar.style.width = `${(shiniesFound / totalTypes) * 100}%`;
+    typesText.textContent = `${typesFound}/${totalTypes}`;
+    shinyText.textContent = `${shiniesFound}/${totalTypes}`;
+
+    typesBar.classList.toggle('plushiedex-bar-complete', typesFound === totalTypes);
+    shinyBar.classList.toggle('plushiedex-bar-complete', shiniesFound === totalTypes);
+
+    const roster = document.getElementById('plushiedex-roster');
+    roster.innerHTML = '';
+
+    CONFIG.PRIZE_TYPES.forEach(prizeType => {
+        const found = caughtTypes.has(prizeType.emoji);
+        const shinyFound = caughtShinies.has(prizeType.emoji);
+
+        const slot = document.createElement('div');
+        slot.className = 'plushiedex-slot';
+        if (!found) slot.classList.add('plushiedex-slot-missing');
+
+        const svg = PlushieFactory.createPlushieSVG(
+            PlushieFactory.getPrizeType(prizeType.emoji),
+            72
+        );
+
+        let badges = '';
+        if (found) badges += '<span class="plushiedex-slot-check">✓</span>';
+        if (shinyFound) badges += '<span class="plushiedex-slot-shiny-badge">✨</span>';
+
+        slot.innerHTML = `
+            <div class="plushiedex-slot-svg">${svg}</div>
+            ${badges}
+            <div class="plushiedex-slot-name">${found ? prizeType.name : '???'}</div>
+        `;
+
+        // Make found slots clickable to open detail
+        if (found) {
+            // Count total catches for this type (normal)
+            let normalCount = 0;
+            history.forEach(record => {
+                if (!record.prizes) return;
+                record.prizes.forEach(p => {
+                    if (p.emoji === prizeType.emoji && !p.shiny) normalCount++;
+                });
+            });
+            slot.addEventListener('click', () => openPlushieDetail({
+                emoji: prizeType.emoji,
+                name: prizeType.name,
+                shiny: false,
+                count: normalCount
+            }));
+        }
+
+        roster.appendChild(slot);
+    });
+
+    // Missing section
+    const missingSection = document.getElementById('plushiedex-missing');
+    const missingList = document.getElementById('plushiedex-missing-list');
+    const completeMsg = document.getElementById('plushiedex-complete');
+
+    const missingTypes = CONFIG.PRIZE_TYPES.filter(t => !caughtTypes.has(t.emoji));
+    const missingShinies = CONFIG.PRIZE_TYPES.filter(t => !caughtShinies.has(t.emoji));
+
+    if (missingTypes.length === 0 && missingShinies.length === 0) {
+        // Full completion!
+        missingSection.style.display = 'none';
+        completeMsg.style.display = 'block';
+    } else if (missingTypes.length === 0 && missingShinies.length > 0) {
+        // All types found, only missing shinies
+        missingSection.style.display = 'block';
+        completeMsg.style.display = 'none';
+        missingList.innerHTML = '';
+
+        const shinyHeader = document.createElement('div');
+        shinyHeader.className = 'plushiedex-missing-subtitle';
+        shinyHeader.textContent = `✨ ${missingShinies.length} shiny variant${missingShinies.length !== 1 ? 's' : ''} to find`;
+        missingList.appendChild(shinyHeader);
+
+        const shinyRow = document.createElement('div');
+        shinyRow.className = 'plushiedex-missing-row';
+        missingShinies.forEach(t => {
+            const chip = document.createElement('div');
+            chip.className = 'plushiedex-missing-chip plushiedex-missing-chip-shiny';
+            const svg = PlushieFactory.createPlushieSVG(PlushieFactory.getPrizeType(t.emoji), 32);
+            chip.innerHTML = `<span class="plushiedex-missing-chip-svg">${svg}</span><span>✨ ${t.name}</span>`;
+            shinyRow.appendChild(chip);
+        });
+        missingList.appendChild(shinyRow);
+    } else {
+        missingSection.style.display = 'block';
+        completeMsg.style.display = 'none';
+        missingList.innerHTML = '';
+
+        // Missing normal types
+        const typeHeader = document.createElement('div');
+        typeHeader.className = 'plushiedex-missing-subtitle';
+        typeHeader.textContent = `${missingTypes.length} type${missingTypes.length !== 1 ? 's' : ''} not yet caught`;
+        missingList.appendChild(typeHeader);
+
+        const typeRow = document.createElement('div');
+        typeRow.className = 'plushiedex-missing-row';
+        missingTypes.forEach(t => {
+            const chip = document.createElement('div');
+            chip.className = 'plushiedex-missing-chip';
+            const svg = PlushieFactory.createPlushieSVG(PlushieFactory.getPrizeType(t.emoji), 32);
+            chip.innerHTML = `<span class="plushiedex-missing-chip-svg">${svg}</span><span>???</span>`;
+            typeRow.appendChild(chip);
+        });
+        missingList.appendChild(typeRow);
+
+        // Missing shinies
+        if (missingShinies.length > 0) {
+            const shinyHeader = document.createElement('div');
+            shinyHeader.className = 'plushiedex-missing-subtitle';
+            shinyHeader.textContent = `✨ ${missingShinies.length} shiny variant${missingShinies.length !== 1 ? 's' : ''} to find`;
+            missingList.appendChild(shinyHeader);
+
+            const shinyRow = document.createElement('div');
+            shinyRow.className = 'plushiedex-missing-row';
+            missingShinies.forEach(t => {
+                const chip = document.createElement('div');
+                chip.className = 'plushiedex-missing-chip plushiedex-missing-chip-shiny';
+                const found = caughtTypes.has(t.emoji);
+                const svg = PlushieFactory.createPlushieSVG(PlushieFactory.getPrizeType(t.emoji), 32);
+                chip.innerHTML = `<span class="plushiedex-missing-chip-svg">${svg}</span><span>✨ ${found ? t.name : '???'}</span>`;
+                shinyRow.appendChild(chip);
+            });
+            missingList.appendChild(shinyRow);
+        }
+    }
+}
+
 // ===== Plushie Detail Overlay =====
 
 function openPlushieDetail(entry) {
@@ -1644,6 +1808,13 @@ window.addEventListener('load', () => {
             if (e.target.id === 'collection-overlay') closeCollectionModal();
         });
 
+        // Plushiedex overlay
+        document.getElementById('plushiedex-btn').addEventListener('click', openPlushiedex);
+        document.getElementById('plushiedex-close-btn').addEventListener('click', closePlushiedex);
+        document.getElementById('plushiedex-overlay').addEventListener('click', (e) => {
+            if (e.target.id === 'plushiedex-overlay') closePlushiedex();
+        });
+
         // Plushie detail overlay
         document.getElementById('plushie-detail-close-btn').addEventListener('click', closePlushieDetail);
         document.getElementById('plushie-detail-overlay').addEventListener('click', (e) => {
@@ -1676,6 +1847,11 @@ window.addEventListener('load', () => {
                 const tutorialOverlay = document.getElementById('tutorial-overlay');
                 if (tutorialOverlay.style.display === 'flex') {
                     closeTutorial();
+                    return;
+                }
+                const plushiedexOverlay = document.getElementById('plushiedex-overlay');
+                if (plushiedexOverlay.style.display === 'flex') {
+                    closePlushiedex();
                     return;
                 }
                 const collectionOverlay = document.getElementById('collection-overlay');

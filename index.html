@@ -166,7 +166,8 @@
             <div class="controls-row">
                 <button id="sound-btn" class="control-btn sound-btn" aria-pressed="true">🔊 SOUND ON</button>
                 <button id="stats-btn" class="control-btn stats-btn">📊 STATS</button>
-                <button id="collection-btn" class="control-btn collection-btn">🧸 COLLECTION</button>
+                <button id="collection-btn" class="control-btn collection-btn">🧸 MY COLLECTION</button>
+                <button id="plushiedex-btn" class="control-btn plushiedex-btn">📖 PLUSHIEDEX</button>
                 <button id="reset-btn" class="control-btn reset-btn">🔄 NEW GAME</button>
                 <button id="export-btn" class="control-btn export-btn" style="display: none;">📸 EXPORT</button>
                 <button id="tutorial-btn" class="control-btn tutorial-btn">❓ HOW TO PLAY</button>
@@ -321,6 +322,45 @@
                 <div id="collection-grid" class="collection-grid"></div>
                 <div id="collection-empty" class="collection-empty" style="display: none;">
                     No plushies collected yet! 🎮<br>Go play some games!
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Plushiedex Overlay -->
+    <div id="plushiedex-overlay" class="plushiedex-overlay" style="display: none;">
+        <div class="plushiedex-card">
+            <button id="plushiedex-close-btn" class="plushiedex-close-btn">✕</button>
+            <div class="plushiedex-header">
+                <div class="plushiedex-header-title">📖 Plushiedex</div>
+                <div class="plushiedex-header-subtitle">Gotta catch 'em all!</div>
+            </div>
+            <div class="plushiedex-progress">
+                <div class="plushiedex-row">
+                    <div class="plushiedex-track">
+                        <span class="plushiedex-label">Types</span>
+                        <div class="plushiedex-bar">
+                            <div class="plushiedex-bar-fill plushiedex-bar-types" id="plushiedex-bar-types"></div>
+                        </div>
+                        <span class="plushiedex-fraction" id="plushiedex-types-text">0/10</span>
+                    </div>
+                    <div class="plushiedex-track">
+                        <span class="plushiedex-label">✨ Shiny</span>
+                        <div class="plushiedex-bar">
+                            <div class="plushiedex-bar-fill plushiedex-bar-shiny" id="plushiedex-bar-shiny"></div>
+                        </div>
+                        <span class="plushiedex-fraction" id="plushiedex-shiny-text">0/10</span>
+                    </div>
+                </div>
+            </div>
+            <div class="plushiedex-roster-wrap">
+                <div class="plushiedex-roster" id="plushiedex-roster"></div>
+                <div id="plushiedex-missing" class="plushiedex-missing-section" style="display: none;">
+                    <div class="plushiedex-missing-title">🔍 Still Missing</div>
+                    <div class="plushiedex-missing-list" id="plushiedex-missing-list"></div>
+                </div>
+                <div id="plushiedex-complete" class="plushiedex-complete-msg" style="display: none;">
+                    🎊 You caught them all! Complete Plushiedex! 🎊
                 </div>
             </div>
         </div>
