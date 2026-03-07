@@ -1988,6 +1988,40 @@ h1 {
     line-height: 1.6;
 }
 
+.stats-export-row {
+    display: flex;
+    gap: 10px;
+    justify-content: center;
+    margin-top: 10px;
+    flex-shrink: 0;
+}
+
+.stats-export-action-btn {
+    background: transparent;
+    border: 1.5px solid rgba(0, 255, 255, 0.3);
+    color: rgba(0, 255, 255, 0.7);
+    font-size: 0.8em;
+    font-weight: bold;
+    padding: 7px 16px;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.2s;
+    letter-spacing: 0.5px;
+}
+
+.stats-export-action-btn:hover {
+    border-color: #00FFFF;
+    color: #00FFFF;
+    background: rgba(0, 255, 255, 0.1);
+    box-shadow: 0 0 12px rgba(0, 255, 255, 0.25);
+}
+
+.stats-export-action-btn.copied {
+    border-color: #00FF88;
+    color: #00FF88;
+    background: rgba(0, 255, 136, 0.12);
+}
+
 .stats-clear-btn {
     background: transparent;
     border: 1.5px solid rgba(255, 20, 147, 0.25);

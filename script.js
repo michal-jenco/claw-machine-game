@@ -2290,6 +2290,314 @@ function handleStatsSort(field) {
     renderStatsModal();
 }
 
+function exportStatsPDF() {
+    const btn = document.getElementById('stats-export-pdf-btn');
+    const origText = btn.textContent;
+    btn.textContent = '⏳ Generating…';
+    btn.disabled = true;
+
+    try {
+        const { jsPDF } = window.jspdf;
+        const doc = new jsPDF({ orientation: 'portrait', unit: 'pt', format: 'a4' });
+        const pageW = doc.internal.pageSize.getWidth();
+        const pageH = doc.internal.pageSize.getHeight();
+        const margin = 40;
+        const contentW = pageW - margin * 2;
+
+        // ─── Color palette ───
+        const bg       = [15, 0, 32];       // #0f0020
+        const pink     = [255, 20, 147];    // #FF1493
+        const cyan     = [0, 255, 255];     // #00FFFF
+        const softPink = [255, 182, 225];   // #FFB6E1
+        const gold     = [255, 215, 0];     // #FFD700
+        const dimCyan  = [103, 232, 249];   // #67E8F9
+        const white    = [255, 255, 255];
+
+        // ─── Helpers ───
+        function fillPage() {
+            doc.setFillColor(...bg);
+            doc.rect(0, 0, pageW, pageH, 'F');
+        }
+
+        function drawPageBorder() {
+            doc.setDrawColor(...cyan);
+            doc.setLineWidth(1.5);
+            doc.roundedRect(20, 20, pageW - 40, pageH - 40, 8, 8, 'S');
+        }
+
+        function drawFooter(pageNum, totalPages) {
+            doc.setFontSize(8);
+            doc.setTextColor(...dimCyan);
+            doc.text(`Page ${pageNum} / ${totalPages}`, pageW / 2, pageH - 28, { align: 'center' });
+            doc.text('Keep being kawaii! ♡', pageW / 2, pageH - 16, { align: 'center' });
+        }
+
+        // We'll set total pages after building all pages
+        let totalPages = 1;
+
+        // ══════════════════════════════════════════════════
+        // PAGE 1 — Title + Lifetime Stats + start of table
+        // ══════════════════════════════════════════════════
+        fillPage();
+        drawPageBorder();
+        let y = 50;
+
+        // Title
+        doc.setFontSize(20);
+        doc.setTextColor(...cyan);
+        doc.setFont('helvetica', 'bold');
+        doc.text('Kawaii Plushie Claw Machine :3', pageW / 2, y, { align: 'center' });
+        y += 22;
+        doc.setFontSize(14);
+        doc.setTextColor(...pink);
+        doc.text('Game Stats', pageW / 2, y, { align: 'center' });
+        y += 10;
+
+        // Divider
+        doc.setDrawColor(...pink);
+        doc.setLineWidth(0.5);
+        doc.line(margin, y, pageW - margin, y);
+        y += 18;
+
+        // ─── Lifetime Stats ───
+        const stats = GameHistory.getLifetimeStats();
+        const lifetimeRows = [
+            ['Games Played', stats.totalGames.toLocaleString()],
+            ['Lifetime Score', stats.lifetimeScore.toLocaleString()],
+            ['Best Score', stats.bestScore.toLocaleString()],
+            ['Lifetime Tickets', stats.lifetimeTickets.toLocaleString()],
+            ['Plushies Caught', stats.totalPlushies.toLocaleString()],
+            ['Shinies', stats.totalShinies.toLocaleString()],
+            ['Perfect Games', stats.perfectGames.toLocaleString()],
+        ];
+
+        const statColW = contentW / 2;
+        doc.setFontSize(10);
+        for (let i = 0; i < lifetimeRows.length; i += 2) {
+            // Left column
+            doc.setTextColor(...softPink);
+            doc.setFont('helvetica', 'normal');
+            doc.text(lifetimeRows[i][0], margin + 4, y);
+            doc.setTextColor(...white);
+            doc.setFont('helvetica', 'bold');
+            doc.text(lifetimeRows[i][1], margin + statColW - 8, y, { align: 'right' });
+
+            // Right column (if exists)
+            if (i + 1 < lifetimeRows.length) {
+                doc.setTextColor(...softPink);
+                doc.setFont('helvetica', 'normal');
+                doc.text(lifetimeRows[i + 1][0], margin + statColW + 12, y);
+                doc.setTextColor(...white);
+                doc.setFont('helvetica', 'bold');
+                doc.text(lifetimeRows[i + 1][1], pageW - margin - 4, y, { align: 'right' });
+            }
+            y += 16;
+        }
+
+        y += 8;
+
+        // Divider
+        doc.setDrawColor(...pink);
+        doc.line(margin, y, pageW - margin, y);
+        y += 16;
+
+        // ─── Section title: Game History ───
+        doc.setFontSize(13);
+        doc.setTextColor(...pink);
+        doc.setFont('helvetica', 'bold');
+        doc.text('Game History', pageW / 2, y, { align: 'center' });
+        y += 18;
+
+        // ─── Build sorted history (same order as the modal) ───
+        const history = GameHistory.getAll();
+        const indexed = history.map((r, i) => ({ ...r, _idx: i }));
+        const sorted = indexed.sort((a, b) => {
+            let va, vb;
+            if (statsSortField === 'date') {
+                va = new Date(a.date).getTime();
+                vb = new Date(b.date).getTime();
+            } else {
+                va = a[statsSortField] ?? 0;
+                vb = b[statsSortField] ?? 0;
+            }
+            return statsSortAsc ? va - vb : vb - va;
+        });
+
+        // ─── Table layout ───
+        const colWidths = [140, 90, 90, 70, 70]; // Date, Score, Tickets, Caught, Tokens Left
+        const colHeaders = ['Date', 'Score', 'Tickets', 'Caught', 'Tokens Left'];
+        const tableX = margin + (contentW - colWidths.reduce((a, b) => a + b, 0)) / 2;
+        const rowHeight = 18;
+        const headerHeight = 22;
+
+        function drawTableHeader(atY) {
+            // Header background
+            doc.setFillColor(0, 255, 255, 0.12);
+            doc.setFillColor(10, 30, 50);
+            const totalW = colWidths.reduce((a, b) => a + b, 0);
+            doc.setFillColor(0, 40, 60);
+            doc.rect(tableX, atY - 13, totalW, headerHeight, 'F');
+
+            doc.setFontSize(8);
+            doc.setFont('helvetica', 'bold');
+            doc.setTextColor(...cyan);
+            let hx = tableX;
+            for (let c = 0; c < colHeaders.length; c++) {
+                const align = c === 0 ? 'left' : 'right';
+                const tx = c === 0 ? hx + 6 : hx + colWidths[c] - 6;
+                doc.text(colHeaders[c].toUpperCase(), tx, atY, { align });
+                hx += colWidths[c];
+            }
+
+            // Header underline
+            doc.setDrawColor(...cyan);
+            doc.setLineWidth(0.8);
+            doc.line(tableX, atY + 5, tableX + totalW, atY + 5);
+
+            return atY + headerHeight;
+        }
+
+        y = drawTableHeader(y);
+
+        // ─── Render rows across pages ───
+        const bottomLimit = pageH - 55; // space for footer
+
+        if (sorted.length === 0) {
+            doc.setFontSize(10);
+            doc.setTextColor(...softPink);
+            doc.setFont('helvetica', 'italic');
+            doc.text('No games played yet! Go catch some plushies!', pageW / 2, y + 20, { align: 'center' });
+        } else {
+            for (let i = 0; i < sorted.length; i++) {
+                // Check if we need a new page
+                if (y + rowHeight > bottomLimit) {
+                    totalPages++;
+                    doc.addPage();
+                    fillPage();
+                    drawPageBorder();
+                    y = 50;
+
+                    // Continuation header
+                    doc.setFontSize(11);
+                    doc.setTextColor(...pink);
+                    doc.setFont('helvetica', 'bold');
+                    doc.text('Game History (continued)', pageW / 2, y, { align: 'center' });
+                    y += 18;
+
+                    y = drawTableHeader(y);
+                }
+
+                const r = sorted[i];
+                const d = new Date(r.date);
+                const dateStr = d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
+                    + '  ' + d.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
+                const perfectBadge = r.isPerfectGame ? ' *' : '';
+                const shinyBadge = r.shinyCaught > 0 ? ` (+${r.shinyCaught}sh)` : '';
+                const tokensLeftVal = r.tokensLeft != null ? String(r.tokensLeft) : '-';
+
+                const rowColor = r.isPerfectGame ? gold : softPink;
+                const scoreColor = r.isPerfectGame ? gold : gold; // score always gold
+
+                // Subtle alternating row background
+                if (i % 2 === 0) {
+                    const totalW = colWidths.reduce((a, b) => a + b, 0);
+                    doc.setFillColor(20, 5, 40);
+                    doc.rect(tableX, y - 11, totalW, rowHeight, 'F');
+                }
+
+                doc.setFontSize(8);
+                doc.setFont('helvetica', 'normal');
+
+                let cx = tableX;
+
+                // Date (left-aligned)
+                doc.setTextColor(...rowColor);
+                doc.text(dateStr, cx + 6, y);
+                cx += colWidths[0];
+
+                // Score (right-aligned)
+                doc.setTextColor(...scoreColor);
+                doc.setFont('courier', 'bold');
+                doc.text(r.score.toLocaleString() + perfectBadge, cx + colWidths[1] - 6, y, { align: 'right' });
+                cx += colWidths[1];
+
+                // Tickets (right-aligned)
+                doc.setFont('helvetica', 'normal');
+                doc.setTextColor(...rowColor);
+                doc.text(r.tickets.toLocaleString(), cx + colWidths[2] - 6, y, { align: 'right' });
+                cx += colWidths[2];
+
+                // Caught (right-aligned)
+                doc.text(String(r.plushiesCaught) + shinyBadge, cx + colWidths[3] - 6, y, { align: 'right' });
+                cx += colWidths[3];
+
+                // Tokens Left (right-aligned)
+                doc.text(tokensLeftVal, cx + colWidths[4] - 6, y, { align: 'right' });
+
+                y += rowHeight;
+            }
+        }
+
+        // ─── Render footers on all pages ───
+        const pageCount = doc.internal.getNumberOfPages();
+        for (let p = 1; p <= pageCount; p++) {
+            doc.setPage(p);
+            drawFooter(p, pageCount);
+        }
+
+        // ─── Export date on last page ───
+        doc.setPage(pageCount);
+        doc.setFontSize(7);
+        doc.setTextColor(...dimCyan);
+        const exportDate = new Date().toLocaleString('en-US', {
+            month: 'short', day: 'numeric', year: 'numeric',
+            hour: '2-digit', minute: '2-digit'
+        });
+        doc.text(`Exported: ${exportDate}`, pageW - margin, pageH - 40, { align: 'right' });
+
+        // ─── Save ───
+        doc.save(`kawaii-claw-stats-${new Date().toISOString().slice(0, 10)}.pdf`);
+
+        btn.textContent = origText;
+        btn.disabled = false;
+    } catch (err) {
+        console.error('Stats PDF export failed:', err);
+        btn.textContent = origText;
+        btn.disabled = false;
+        alert('PDF export failed: ' + err.message);
+    }
+}
+
+function exportStatsJSON() {
+    const btn = document.getElementById('stats-export-json-btn');
+    const stats = GameHistory.getLifetimeStats();
+    const history = GameHistory.getAll();
+
+    const exportData = {
+        exportDate: new Date().toISOString(),
+        lifetimeStats: stats,
+        gameHistory: history,
+    };
+
+    const json = JSON.stringify(exportData, null, 2);
+
+    navigator.clipboard.writeText(json).then(() => {
+        const origText = btn.textContent;
+        btn.textContent = '✅ Copied!';
+        btn.classList.add('copied');
+        setTimeout(() => {
+            btn.textContent = origText;
+            btn.classList.remove('copied');
+        }, 1500);
+    }).catch(() => {
+        // Fallback: open in a new window
+        const w = window.open('', '_blank');
+        if (w) {
+            w.document.write('<pre>' + json.replace(/</g, '&lt;') + '</pre>');
+        }
+    });
+}
+
 function clearGameHistory() {
     if (confirm('Clear all game history? This cannot be undone!')) {
         GameHistory.clear();
@@ -2322,6 +2630,8 @@ window.addEventListener('load', () => {
         document.getElementById('stats-btn').addEventListener('click', openStatsModal);
         document.getElementById('stats-close-btn').addEventListener('click', closeStatsModal);
         document.getElementById('stats-clear-btn').addEventListener('click', clearGameHistory);
+        document.getElementById('stats-export-pdf-btn').addEventListener('click', exportStatsPDF);
+        document.getElementById('stats-export-json-btn').addEventListener('click', exportStatsJSON);
         document.getElementById('stats-overlay').addEventListener('click', (e) => {
             if (e.target.id === 'stats-overlay') closeStatsModal();
         });
