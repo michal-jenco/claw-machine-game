@@ -1882,9 +1882,15 @@ function renderCollectionModal() {
             ? `<div class="collection-count">×${entry.count}</div>`
             : '';
 
+        const prizeConfig = CONFIG.PRIZE_TYPES.find(t => t.emoji === entry.emoji);
+        const gen = prizeConfig ? prizeConfig.gen : 1;
+        const genLabel = gen === 1 ? 'G1' : gen === 2 ? 'G2' : 'G3';
+        const genClass = `collection-gen collection-gen-${gen}`;
+
         item.innerHTML = `
             <div class="collection-item-svg">${svg}</div>
             ${countBadge}
+            <div class="${genClass}">${genLabel}</div>
             <div class="collection-item-name">${entry.shiny ? '✨ ' : ''}${entry.name}</div>
         `;
 

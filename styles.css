@@ -2786,6 +2786,38 @@ h1 {
     line-height: 1.2;
 }
 
+.collection-gen {
+    position: absolute;
+    top: 6px;
+    left: 6px;
+    font-size: 0.6em;
+    font-weight: 900;
+    font-family: 'Courier New', monospace;
+    padding: 2px 5px;
+    border-radius: 6px;
+    text-align: center;
+    letter-spacing: 0.5px;
+    opacity: 0.75;
+}
+
+.collection-gen-1 {
+    background: rgba(0, 255, 255, 0.15);
+    border: 1px solid rgba(0, 255, 255, 0.4);
+    color: #67E8F9;
+}
+
+.collection-gen-2 {
+    background: rgba(255, 82, 82, 0.15);
+    border: 1px solid rgba(255, 82, 82, 0.4);
+    color: #FF8A80;
+}
+
+.collection-gen-3 {
+    background: rgba(102, 187, 106, 0.15);
+    border: 1px solid rgba(102, 187, 106, 0.4);
+    color: #A5D6A7;
+}
+
 .collection-empty {
     color: #FFB6E1;
     font-size: 1em;
