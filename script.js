@@ -57,6 +57,7 @@ const CONFIG = {
     PRIZE_SPAWN_ATTEMPTS: 60,
     PLUSHIEDEX_COMPLETION_BONUS_TICKETS: 10_000_000_000,
     PLUSHIEDEX_GEN2_COMPLETION_BONUS_TICKETS: 10_000_000_000,
+    PLUSHIEDEX_GEN3_COMPLETION_BONUS_TICKETS: 10_000_000_000,
     PRIZE_TYPES: [
         // Gen 1: Kawaii Classics
         { emoji: '🎵', name: 'Miku', points: 20, gen: 1 },
@@ -80,7 +81,17 @@ const CONFIG = {
         { emoji: '🍵', name: 'Mio', points: 20, gen: 2 },
         { emoji: '🍫', name: 'Konata', points: 18, gen: 2 },
         { emoji: '📚', name: 'Kagami', points: 19, gen: 2 },
-        { emoji: '🔌', name: 'Lain', points: 69, gen: 2 }
+        { emoji: '🔌', name: 'Lain', points: 69, gen: 2 },
+        // Gen 3: The Apothecary Diaries
+        { emoji: '🧪', name: 'Maomao', points: 42, gen: 3 },
+        { emoji: '🌙', name: 'Jinshi', points: 40, gen: 3 },
+        { emoji: '🌺', name: 'Gyokuyo', points: 36, gen: 3 },
+        { emoji: '🦋', name: 'Lishu', points: 20, gen: 3 },
+        { emoji: '🐍', name: 'Lakan', points: 69, gen: 3 },
+        { emoji: '🍃', name: 'Xiaolan', points: 18, gen: 3 },
+        { emoji: '🏯', name: 'Gaoshun', points: 22, gen: 3 },
+        { emoji: '🐝', name: 'Fengxian', points: 38, gen: 3 },
+        { emoji: '👑', name: 'Ah-Duo', points: 35, gen: 3 }
     ]
 };
 
@@ -108,6 +119,16 @@ const PLUSHIE_PERSONALITIES = {
     'konata':    'The ultimate otaku gamer girl! Konata stays up all night playing games and watching anime, barely studies (but aces tests anyway?!). She has a :3 face permanently equipped and loves teasing Kagami~ 🍫🎮',
     'kagami':    'The tsundere twintail queen of Lucky Star! Kagami acts annoyed but secretly cares a lot. She\'s studious, responsible, and the only one who can keep up with Konata\'s references. B-baka!! 📚',
     'lain':      'And you don\'t seem to understand... Lain is quiet, enigmatic, and deeply connected to the Wired. She wears her bear pajamas and stares at her NAVI computer. Present day, present time. HAHAHA... 🔌',
+    // Gen 3: The Apothecary Diaries
+    'maomao':    'The apothecary girl who just wants to be left alone with her poisons and medicines! Maomao is sharp, sarcastic, and secretly brilliant. She can\'t help solving mysteries even when she tries not to. Her freckles are adorable and she WILL taste-test suspicious substances 🧪💀',
+    'jinshi':    'The most beautiful man in the inner court~ Jinshi is charming, cunning, and surprisingly vulnerable around a certain apothecary. He uses his looks as a weapon but gets flustered when Maomao treats him like a bug. Truly down bad 🌙✨',
+    'gyokuyo':   'The radiant consort of the Jade Pavilion! Gyokuyo is warm, clever, and fiercely protective of those she loves. She took Maomao under her wing and always knows more than she lets on. A queen through and through 🌺👑',
+    'lishu':     'The youngest and most timid of the consorts... Lishu is terrified of being poisoned (understandably!) and cries a lot, but she\'s trying her best in a scary world. Protect this anxious butterfly at all costs 🦋💧',
+    'lakan':     'The eccentric military strategist who sees the world like a game board! Lakan is brilliant, unsettling, and wears a permanent fox grin. He plays go obsessively and has a complicated past with a certain courtesan... 🐍🎭',
+    'xiaolan':   'Maomao\'s bestie and fellow maid in the inner court! Xiaolan is cheerful, loyal, and always worried about Maomao getting into trouble (which she always does). The sunshine friend everyone deserves 🍃☀️',
+    'gaoshun':   'Jinshi\'s ever-loyal aide who has seen TOO MUCH. Gaoshun is serious, dutiful, and perpetually exhausted by his master\'s antics. He keeps everything running behind the scenes. Someone give this man a day off 🏯😤',
+    'fengxian':  'A legendary beauty of the pleasure district and Maomao\'s mother figure. Fengxian is elegant, melancholic, and carries deep scars from her past. Her story is one of the most heartbreaking in the series... 🐝🥀',
+    'ahduo':     'The dignified and strong-willed Virtuous Consort! Ah-Duo carries herself with regal grace but hides a deep sadness beneath her confident smile. She was once the Emperor\'s favorite and her story intertwines with the palace\'s darkest secrets... 👑💔',
 };
 
 // Plushie Sources — franchise / origin shown on detail card
@@ -133,6 +154,16 @@ const PLUSHIE_SOURCES = {
     'konata':    'Lucky Star',
     'kagami':    'Lucky Star',
     'lain':      'Serial Experiments Lain',
+    // Gen 3: The Apothecary Diaries
+    'maomao':    'The Apothecary Diaries',
+    'jinshi':    'The Apothecary Diaries',
+    'gyokuyo':   'The Apothecary Diaries',
+    'lishu':     'The Apothecary Diaries',
+    'lakan':     'The Apothecary Diaries',
+    'xiaolan':   'The Apothecary Diaries',
+    'gaoshun':   'The Apothecary Diaries',
+    'fengxian':  'The Apothecary Diaries',
+    'ahduo':     'The Apothecary Diaries',
 };
 
 // Kawaii kaomojis for decoration
@@ -151,6 +182,7 @@ const KAOMOJIS = [
 const HISTORY_KEY = 'kawaiiClawGameHistory';
 const PLUSHIEDEX_BONUS_KEY = 'kawaiiClawPlushiedexCompletionBonus';
 const PLUSHIEDEX_GEN2_BONUS_KEY = 'kawaiiClawPlushiedexGen2CompletionBonus';
+const PLUSHIEDEX_GEN3_BONUS_KEY = 'kawaiiClawPlushiedexGen3CompletionBonus';
 const MAX_HISTORY = 500;
 
 const GameHistory = {
@@ -171,16 +203,18 @@ const GameHistory = {
         const history = this.getAll();
         const plushiedexBonus = this.getPlushiedexCompletionBonus();
         const plushiedexGen2Bonus = this.getPlushiedexGen2CompletionBonus();
+        const plushiedexGen3Bonus = this.getPlushiedexGen3CompletionBonus();
         return {
             totalGames: history.length,
             lifetimeScore: history.reduce((s, r) => s + r.score, 0),
-            lifetimeTickets: history.reduce((s, r) => s + r.tickets, 0) + plushiedexBonus + plushiedexGen2Bonus,
+            lifetimeTickets: history.reduce((s, r) => s + r.tickets, 0) + plushiedexBonus + plushiedexGen2Bonus + plushiedexGen3Bonus,
             totalPlushies: history.reduce((s, r) => s + r.plushiesCaught, 0),
             totalShinies: history.reduce((s, r) => s + r.shinyCaught, 0),
             perfectGames: history.filter(r => r.isPerfectGame).length,
             bestScore: history.length ? Math.max(...history.map(r => r.score)) : 0,
             plushiedexCompletionBonus: plushiedexBonus,
             plushiedexGen2CompletionBonus: plushiedexGen2Bonus,
+            plushiedexGen3CompletionBonus: plushiedexGen3Bonus,
         };
     },
 
@@ -208,10 +242,23 @@ const GameHistory = {
         return !!localStorage.getItem(PLUSHIEDEX_GEN2_BONUS_KEY);
     },
 
+    getPlushiedexGen3CompletionBonus() {
+        return parseInt(localStorage.getItem(PLUSHIEDEX_GEN3_BONUS_KEY)) || 0;
+    },
+
+    awardPlushiedexGen3CompletionBonus(amount) {
+        localStorage.setItem(PLUSHIEDEX_GEN3_BONUS_KEY, String(amount));
+    },
+
+    hasPlushiedexGen3CompletionBonus() {
+        return !!localStorage.getItem(PLUSHIEDEX_GEN3_BONUS_KEY);
+    },
+
     clear() {
         localStorage.removeItem(HISTORY_KEY);
         localStorage.removeItem(PLUSHIEDEX_BONUS_KEY);
         localStorage.removeItem(PLUSHIEDEX_GEN2_BONUS_KEY);
+        localStorage.removeItem(PLUSHIEDEX_GEN3_BONUS_KEY);
     }
 };
 
@@ -616,6 +663,29 @@ function checkAndAwardPlushiedexGen2Completion() {
     showPlushiedexGen2CompletionToast(bonus);
 }
 
+function isPlushiedexGen3Complete() {
+    const gen3Types = CONFIG.PRIZE_TYPES.filter(t => t.gen === 3);
+    const totalTypes = gen3Types.length;
+    if (totalTypes === 0) return false;
+    const gen3Emojis = new Set(gen3Types.map(t => t.emoji));
+    let knownTypes = 0, knownShinies = 0;
+    gen3Emojis.forEach(e => {
+        if (gameState.plushiedexKnownTypes.has(e)) knownTypes++;
+        if (gameState.plushiedexKnownShinies.has(e)) knownShinies++;
+    });
+    return knownTypes >= totalTypes && knownShinies >= totalTypes;
+}
+
+function checkAndAwardPlushiedexGen3Completion() {
+    if (GameHistory.hasPlushiedexGen3CompletionBonus()) return;
+    if (!isPlushiedexGen3Complete()) return;
+
+    const bonus = CONFIG.PLUSHIEDEX_GEN3_COMPLETION_BONUS_TICKETS;
+    GameHistory.awardPlushiedexGen3CompletionBonus(bonus);
+    gameState.plushiedexGen3CompletionAwarded = true;
+    showPlushiedexGen3CompletionToast(bonus);
+}
+
 function showPlushiedexCompletionToast(bonus) {
     const stage = document.querySelector('.machine-stage');
     if (!stage) return;
@@ -654,6 +724,25 @@ function showPlushiedexGen2CompletionToast(bonus) {
     }, 7000);
 }
 
+function showPlushiedexGen3CompletionToast(bonus) {
+    const stage = document.querySelector('.machine-stage');
+    if (!stage) return;
+
+    const toast = document.createElement('div');
+    toast.className = 'plushiedex-complete-toast';
+    toast.innerHTML = `
+        <div class="plushiedex-complete-toast-line">📖💊 GEN 3 PLUSHIEDEX COMPLETE! 💊📖</div>
+        <div class="plushiedex-complete-toast-bonus">+${bonus.toLocaleString()} Lifetime Tickets!</div>
+    `;
+    stage.appendChild(toast);
+
+    playSound('plushiedexComplete');
+
+    setTimeout(() => {
+        toast.remove();
+    }, 7000);
+}
+
 // Initialize game
 function initGame() {
 
@@ -676,6 +765,7 @@ function initGame() {
     gameState.lastTokensLeft = 0;
     gameState.plushiedexCompletionAwarded = false;
     gameState.plushiedexGen2CompletionAwarded = false;
+    gameState.plushiedexGen3CompletionAwarded = false;
 
     clearBonusMessageTimers();
     const bonusEl = document.getElementById('bonus-message');
@@ -1137,6 +1227,7 @@ function addCaughtPrize(prize) {
         // Check if this completed the entire Plushiedex (per-gen)
         checkAndAwardPlushiedexCompletion();
         checkAndAwardPlushiedexGen2Completion();
+        checkAndAwardPlushiedexGen3Completion();
     }
 
     if (prize.shiny) {
@@ -1198,6 +1289,7 @@ function endGame(isPerfect = false) {
         prizes: gameState.caughtPrizes.map(p => ({ emoji: p.emoji, name: p.name, shiny: !!p.shiny, newPlushiedexEntry: !!p.newPlushiedexEntry })),
         plushiedexCompleted: !!gameState.plushiedexCompletionAwarded,
         plushiedexGen2Completed: !!gameState.plushiedexGen2CompletionAwarded,
+        plushiedexGen3Completed: !!gameState.plushiedexGen3CompletionAwarded,
     });
 
     let message;
@@ -1285,15 +1377,19 @@ function showSplashScreen(isPerfect) {
 
     // Plushiedex completion bonus badge
     const dexCompleteBadge = document.getElementById('splash-dex-complete');
-    if (gameState.plushiedexCompletionAwarded || gameState.plushiedexGen2CompletionAwarded) {
+    if (gameState.plushiedexCompletionAwarded || gameState.plushiedexGen2CompletionAwarded || gameState.plushiedexGen3CompletionAwarded) {
         dexCompleteBadge.style.display = 'block';
         const totalBonus = (gameState.plushiedexCompletionAwarded ? CONFIG.PLUSHIEDEX_COMPLETION_BONUS_TICKETS : 0)
-            + (gameState.plushiedexGen2CompletionAwarded ? CONFIG.PLUSHIEDEX_GEN2_COMPLETION_BONUS_TICKETS : 0);
-        const label = gameState.plushiedexGen2CompletionAwarded && !gameState.plushiedexCompletionAwarded
-            ? '📖🎌 GEN 2 PLUSHIEDEX COMPLETE! 🎌📖'
-            : gameState.plushiedexCompletionAwarded && !gameState.plushiedexGen2CompletionAwarded
-            ? '📖🎊 PLUSHIEDEX COMPLETE! 🎊📖'
-            : '📖🎊 PLUSHIEDEX GEN 1 & GEN 2 COMPLETE! 🎊📖';
+            + (gameState.plushiedexGen2CompletionAwarded ? CONFIG.PLUSHIEDEX_GEN2_COMPLETION_BONUS_TICKETS : 0)
+            + (gameState.plushiedexGen3CompletionAwarded ? CONFIG.PLUSHIEDEX_GEN3_COMPLETION_BONUS_TICKETS : 0);
+        const completedGens = [
+            gameState.plushiedexCompletionAwarded && 'Gen 1',
+            gameState.plushiedexGen2CompletionAwarded && 'Gen 2',
+            gameState.plushiedexGen3CompletionAwarded && 'Gen 3'
+        ].filter(Boolean);
+        const label = completedGens.length === 1
+            ? `📖🎊 ${completedGens[0].toUpperCase()} PLUSHIEDEX COMPLETE! 🎊📖`
+            : `📖🎊 PLUSHIEDEX ${completedGens.join(' & ').toUpperCase()} COMPLETE! 🎊📖`;
         dexCompleteBadge.querySelector('.dex-complete-title').textContent = label;
         document.getElementById('splash-dex-complete-amount').textContent =
             totalBonus.toLocaleString();
@@ -1496,10 +1592,11 @@ function generateReportCard() {
 
     // Plushiedex completion bonus badge
     const reportDexComplete = document.getElementById('report-dex-complete');
-    if (gameState.plushiedexCompletionAwarded || gameState.plushiedexGen2CompletionAwarded) {
+    if (gameState.plushiedexCompletionAwarded || gameState.plushiedexGen2CompletionAwarded || gameState.plushiedexGen3CompletionAwarded) {
         reportDexComplete.style.display = 'block';
         const totalBonus = (gameState.plushiedexCompletionAwarded ? CONFIG.PLUSHIEDEX_COMPLETION_BONUS_TICKETS : 0)
-            + (gameState.plushiedexGen2CompletionAwarded ? CONFIG.PLUSHIEDEX_GEN2_COMPLETION_BONUS_TICKETS : 0);
+            + (gameState.plushiedexGen2CompletionAwarded ? CONFIG.PLUSHIEDEX_GEN2_COMPLETION_BONUS_TICKETS : 0)
+            + (gameState.plushiedexGen3CompletionAwarded ? CONFIG.PLUSHIEDEX_GEN3_COMPLETION_BONUS_TICKETS : 0);
         document.getElementById('report-dex-complete-amount').textContent =
             totalBonus.toLocaleString();
     } else {
@@ -1579,10 +1676,11 @@ function generateReportCardFromRecord(record) {
 
     // Plushiedex completion bonus badge
     const reportDexComplete = document.getElementById('report-dex-complete');
-    if (record.plushiedexCompleted || record.plushiedexGen2Completed) {
+    if (record.plushiedexCompleted || record.plushiedexGen2Completed || record.plushiedexGen3Completed) {
         reportDexComplete.style.display = 'block';
         const totalBonus = (record.plushiedexCompleted ? CONFIG.PLUSHIEDEX_COMPLETION_BONUS_TICKETS : 0)
-            + (record.plushiedexGen2Completed ? CONFIG.PLUSHIEDEX_GEN2_COMPLETION_BONUS_TICKETS : 0);
+            + (record.plushiedexGen2Completed ? CONFIG.PLUSHIEDEX_GEN2_COMPLETION_BONUS_TICKETS : 0)
+            + (record.plushiedexGen3Completed ? CONFIG.PLUSHIEDEX_GEN3_COMPLETION_BONUS_TICKETS : 0);
         document.getElementById('report-dex-complete-amount').textContent =
             totalBonus.toLocaleString();
     } else {
@@ -1911,7 +2009,7 @@ function renderPlushiedex() {
     const missingTypes = genTypes.filter(t => !caughtTypes.has(t.emoji));
     const missingShinies = genTypes.filter(t => !caughtShinies.has(t.emoji));
 
-    const genLabel = activeGen === 1 ? '' : ' Gen 2';
+    const genLabel = activeGen === 1 ? '' : activeGen === 2 ? ' Gen 2' : ' Gen 3';
 
     if (missingTypes.length === 0 && missingShinies.length === 0) {
         // Full completion!
@@ -1919,7 +2017,9 @@ function renderPlushiedex() {
         completeMsg.style.display = 'block';
         completeMsg.textContent = activeGen === 1
             ? '🎊 You caught them all! Complete Plushiedex! 🎊'
-            : '🎊🎌 You caught them all! Gen 2 Plushiedex Complete! 🎌🎊';
+            : activeGen === 2
+            ? '🎊🎌 You caught them all! Gen 2 Plushiedex Complete! 🎌🎊'
+            : '🎊💊 You caught them all! Gen 3 Plushiedex Complete! 💊🎊';
     } else if (missingTypes.length === 0 && missingShinies.length > 0) {
         // All types found, only missing shinies
         missingSection.style.display = 'block';
@@ -2207,7 +2307,9 @@ function openPlushieDetail(entry) {
 
     let badgesHTML = '';
     const gen = prizeConfig ? prizeConfig.gen : 1;
-    badgesHTML += gen === 2
+    badgesHTML += gen === 3
+        ? `<span class="plushie-detail-badge plushie-detail-badge-gen3">💊 Gen 3</span>`
+        : gen === 2
         ? `<span class="plushie-detail-badge plushie-detail-badge-gen2">🎌 Gen 2</span>`
         : `<span class="plushie-detail-badge plushie-detail-badge-gen1">✨ Gen 1</span>`;
     if (entry.shiny) {

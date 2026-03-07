@@ -3012,6 +3012,13 @@ h1 {
     text-shadow: 0 0 6px rgba(255, 82, 82, 0.3);
 }
 
+.plushie-detail-badge-gen3 {
+    background: rgba(102, 187, 106, 0.12);
+    border: 1.5px solid rgba(102, 187, 106, 0.4);
+    color: #A5D6A7;
+    text-shadow: 0 0 6px rgba(102, 187, 106, 0.3);
+}
+
 .plushie-detail-source {
     font-size: 0.78em;
     color: #aaa;

@@ -47,6 +47,25 @@ class PlushieFactory {
                 return PlushieFactoryGen2.createKagamiPlushie(size);
             case 'lain':
                 return PlushieFactoryGen2.createLainPlushie(size);
+            // === Gen 3: The Apothecary Diaries ===
+            case 'maomao':
+                return PlushieFactoryGen3.createMaomaoPlushie(size);
+            case 'jinshi':
+                return PlushieFactoryGen3.createJinshiPlushie(size);
+            case 'gyokuyo':
+                return PlushieFactoryGen3.createGyokuyoPlushie(size);
+            case 'lishu':
+                return PlushieFactoryGen3.createLishuPlushie(size);
+            case 'lakan':
+                return PlushieFactoryGen3.createLakanPlushie(size);
+            case 'xiaolan':
+                return PlushieFactoryGen3.createXiaolanPlushie(size);
+            case 'gaoshun':
+                return PlushieFactoryGen3.createGaoshunPlushie(size);
+            case 'fengxian':
+                return PlushieFactoryGen3.createFengxianPlushie(size);
+            case 'ahduo':
+                return PlushieFactoryGen3.createAhduoPlushie(size);
             default:
                 return this.createMikuPlushie(size);
         }
@@ -549,7 +568,17 @@ class PlushieFactory {
             '🍵': 'mio_k',
             '🍫': 'konata',
             '📚': 'kagami',
-            '🔌': 'lain'
+            '🔌': 'lain',
+            // Gen 3: The Apothecary Diaries
+            '🧪': 'maomao',
+            '🌙': 'jinshi',
+            '🌺': 'gyokuyo',
+            '🦋': 'lishu',
+            '🐍': 'lakan',
+            '🍃': 'xiaolan',
+            '🏯': 'gaoshun',
+            '🐝': 'fengxian',
+            '👑': 'ahduo'
         };
         return typeMap[emoji] || 'miku';
     }
