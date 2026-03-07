@@ -863,7 +863,7 @@ async function moveClawUp() {
 // Toggle button states
 function toggleButtons(enabled) {
     document.querySelectorAll('.control-btn').forEach(btn => {
-        if (btn.id === 'stats-btn') return; // always enabled
+        if (btn.id === 'stats-btn' || btn.id === 'collection-btn') return; // always enabled
         btn.disabled = !enabled;
         if (!enabled) btn.style.opacity = '0.5';
         else btn.style.opacity = '1';
@@ -1331,6 +1331,183 @@ async function exportReportCard(triggerBtn) {
 let statsSortField = 'score';
 let statsSortAsc = false; // descending by default
 
+// ===== Plushie Collection Modal =====
+
+function openCollectionModal() {
+    const overlay = document.getElementById('collection-overlay');
+    renderCollectionModal();
+    overlay.style.display = 'flex';
+}
+
+function closeCollectionModal() {
+    document.getElementById('collection-overlay').style.display = 'none';
+}
+
+function renderCollectionModal() {
+    const history = GameHistory.getAll();
+    const grid = document.getElementById('collection-grid');
+    const emptyMsg = document.getElementById('collection-empty');
+    const totalEl = document.getElementById('collection-total');
+
+    // Aggregate all plushies from all games, keyed by name + shiny status
+    const plushieMap = new Map();
+    let totalCount = 0;
+
+    history.forEach(record => {
+        if (!record.prizes) return;
+        record.prizes.forEach(p => {
+            const key = `${p.emoji}|${p.name}|${p.shiny ? 'shiny' : 'normal'}`;
+            if (!plushieMap.has(key)) {
+                plushieMap.set(key, { emoji: p.emoji, name: p.name, shiny: !!p.shiny, count: 0 });
+            }
+            plushieMap.get(key).count++;
+            totalCount++;
+        });
+    });
+
+    grid.innerHTML = '';
+
+    if (plushieMap.size === 0) {
+        emptyMsg.style.display = 'block';
+        totalEl.textContent = '';
+        return;
+    }
+
+    emptyMsg.style.display = 'none';
+    totalEl.textContent = `${totalCount.toLocaleString()} plushie${totalCount !== 1 ? 's' : ''} collected across ${history.length} game${history.length !== 1 ? 's' : ''}`;
+
+    // Sort: shinies first, then by count descending, then by name
+    const sorted = [...plushieMap.values()].sort((a, b) => {
+        if (a.shiny !== b.shiny) return a.shiny ? -1 : 1;
+        if (b.count !== a.count) return b.count - a.count;
+        return a.name.localeCompare(b.name);
+    });
+
+    sorted.forEach((entry, i) => {
+        const item = document.createElement('div');
+        item.className = 'collection-item';
+        if (entry.shiny) item.classList.add('collection-shiny');
+        item.style.animationDelay = `${i * 0.04}s`;
+
+        const svg = PlushieFactory.createPlushieSVG(
+            PlushieFactory.getPrizeType(entry.emoji),
+            90
+        );
+
+        const countBadge = entry.count > 1
+            ? `<div class="collection-count">×${entry.count}</div>`
+            : '';
+
+        item.innerHTML = `
+            <div class="collection-item-svg">${svg}</div>
+            ${countBadge}
+            <div class="collection-item-name">${entry.shiny ? '✨ ' : ''}${entry.name}</div>
+        `;
+
+        item.style.cursor = 'pointer';
+        item.addEventListener('click', () => openPlushieDetail(entry));
+
+        grid.appendChild(item);
+    });
+}
+
+// ===== Plushie Detail Overlay =====
+
+function openPlushieDetail(entry) {
+    const overlay = document.getElementById('plushie-detail-overlay');
+    const svgContainer = document.getElementById('plushie-detail-svg');
+    const nameEl = document.getElementById('plushie-detail-name');
+    const badgesEl = document.getElementById('plushie-detail-badges');
+    const statsEl = document.getElementById('plushie-detail-stats');
+    const spotlight = document.getElementById('plushie-detail-spotlight');
+
+    // Big SVG render
+    const bigSvg = PlushieFactory.createPlushieSVG(
+        PlushieFactory.getPrizeType(entry.emoji),
+        220
+    );
+    svgContainer.innerHTML = bigSvg;
+
+    // Name
+    nameEl.textContent = entry.name;
+
+    // Shiny class on card
+    const card = overlay.querySelector('.plushie-detail-card');
+    card.classList.toggle('plushie-detail-shiny', !!entry.shiny);
+
+    // Spotlight color
+    if (entry.shiny) {
+        spotlight.style.background = 'radial-gradient(circle, rgba(255,215,0,0.12) 0%, rgba(255,215,0,0.03) 50%, transparent 70%)';
+    } else {
+        spotlight.style.background = 'radial-gradient(circle, rgba(255,20,147,0.08) 0%, rgba(255,20,147,0.02) 50%, transparent 70%)';
+    }
+
+    // Badges
+    const prizeConfig = CONFIG.PRIZE_TYPES.find(t => t.emoji === entry.emoji);
+    const points = prizeConfig ? prizeConfig.points : '?';
+
+    let badgesHTML = '';
+    if (entry.shiny) {
+        badgesHTML += `<span class="plushie-detail-badge plushie-detail-badge-shiny">✨ Shiny</span>`;
+    }
+    badgesHTML += `<span class="plushie-detail-badge plushie-detail-badge-points">${entry.emoji} ${points} pts</span>`;
+    if (entry.shiny) {
+        badgesHTML += `<span class="plushie-detail-badge plushie-detail-badge-shiny-pts">✨ ${points * 10} pts when shiny</span>`;
+    }
+    badgesEl.innerHTML = badgesHTML;
+
+    // Stats
+    let statsHTML = `
+        <div class="plushie-detail-stat">
+            <span class="plushie-detail-stat-label">Times Caught</span>
+            <span class="plushie-detail-stat-value">${entry.count.toLocaleString()}</span>
+        </div>
+    `;
+
+    // Find first & last catch dates
+    const history = GameHistory.getAll();
+    let firstCatchDate = null;
+    let lastCatchDate = null;
+    history.forEach(record => {
+        if (!record.prizes) return;
+        const hasThis = record.prizes.some(p =>
+            p.emoji === entry.emoji && p.name === entry.name && !!p.shiny === !!entry.shiny
+        );
+        if (hasThis) {
+            const d = new Date(record.date);
+            if (!firstCatchDate || d < firstCatchDate) firstCatchDate = d;
+            if (!lastCatchDate || d > lastCatchDate) lastCatchDate = d;
+        }
+    });
+
+    if (firstCatchDate) {
+        const fmt = (d) => d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+        statsHTML += `
+            <div class="plushie-detail-stat">
+                <span class="plushie-detail-stat-label">First Caught</span>
+                <span class="plushie-detail-stat-value">${fmt(firstCatchDate)}</span>
+            </div>
+        `;
+        if (lastCatchDate && lastCatchDate.getTime() !== firstCatchDate.getTime()) {
+            statsHTML += `
+                <div class="plushie-detail-stat">
+                    <span class="plushie-detail-stat-label">Last Caught</span>
+                    <span class="plushie-detail-stat-value">${fmt(lastCatchDate)}</span>
+                </div>
+            `;
+        }
+    }
+
+    statsEl.innerHTML = statsHTML;
+
+    overlay.style.display = 'flex';
+    playSound('catch');
+}
+
+function closePlushieDetail() {
+    document.getElementById('plushie-detail-overlay').style.display = 'none';
+}
+
 function openStatsModal() {
     const overlay = document.getElementById('stats-overlay');
     renderStatsModal();
@@ -1460,6 +1637,19 @@ window.addEventListener('load', () => {
             th.addEventListener('click', () => handleStatsSort(th.dataset.sort));
         });
 
+        // Collection modal
+        document.getElementById('collection-btn').addEventListener('click', openCollectionModal);
+        document.getElementById('collection-close-btn').addEventListener('click', closeCollectionModal);
+        document.getElementById('collection-overlay').addEventListener('click', (e) => {
+            if (e.target.id === 'collection-overlay') closeCollectionModal();
+        });
+
+        // Plushie detail overlay
+        document.getElementById('plushie-detail-close-btn').addEventListener('click', closePlushieDetail);
+        document.getElementById('plushie-detail-overlay').addEventListener('click', (e) => {
+            if (e.target.id === 'plushie-detail-overlay') closePlushieDetail();
+        });
+
         const soundBtn = document.getElementById('sound-btn');
         if (soundBtn) {
             soundBtn.addEventListener('click', toggleSound);
@@ -1478,9 +1668,19 @@ window.addEventListener('load', () => {
         document.addEventListener('keydown', (e) => {
             // Close stats modal with Escape
             if (e.key === 'Escape') {
+                const plushieDetailOverlay = document.getElementById('plushie-detail-overlay');
+                if (plushieDetailOverlay.style.display === 'flex') {
+                    closePlushieDetail();
+                    return;
+                }
                 const tutorialOverlay = document.getElementById('tutorial-overlay');
                 if (tutorialOverlay.style.display === 'flex') {
                     closeTutorial();
+                    return;
+                }
+                const collectionOverlay = document.getElementById('collection-overlay');
+                if (collectionOverlay.style.display === 'flex') {
+                    closeCollectionModal();
                     return;
                 }
                 const statsOverlay = document.getElementById('stats-overlay');
