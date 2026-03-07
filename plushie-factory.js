@@ -24,6 +24,29 @@ class PlushieFactory {
                 return this.createRibbonPlushie(size);
             case 'star':
                 return this.createStarPlushie(size);
+            // === Gen 2: Anime Classics ===
+            case 'chiyo':
+                return PlushieFactoryGen2.createChiyoPlushie(size);
+            case 'osaka':
+                return PlushieFactoryGen2.createOsakaPlushie(size);
+            case 'sakaki_az':
+                return PlushieFactoryGen2.createSakakiPlushie(size);
+            case 'tomo':
+                return PlushieFactoryGen2.createTomoPlushie(size);
+            case 'yomi':
+                return PlushieFactoryGen2.createYomiPlushie(size);
+            case 'kagura':
+                return PlushieFactoryGen2.createKaguraPlushie(size);
+            case 'yui_k':
+                return PlushieFactoryGen2.createYuiKPlushie(size);
+            case 'mio_k':
+                return PlushieFactoryGen2.createMioKPlushie(size);
+            case 'konata':
+                return PlushieFactoryGen2.createKonataPlushie(size);
+            case 'kagami':
+                return PlushieFactoryGen2.createKagamiPlushie(size);
+            case 'lain':
+                return PlushieFactoryGen2.createLainPlushie(size);
             default:
                 return this.createMikuPlushie(size);
         }
@@ -514,7 +537,19 @@ class PlushieFactory {
             '🌸': 'sakura',
             '💜': 'purple',
             '🎀': 'ribbon',
-            '⭐': 'star'
+            '⭐': 'star',
+            // Gen 2: Anime Classics
+            '🐱': 'chiyo',
+            '🌀': 'osaka',
+            '🐧': 'sakaki_az',
+            '🏃': 'tomo',
+            '👓': 'yomi',
+            '🎒': 'kagura',
+            '🎸': 'yui_k',
+            '🍵': 'mio_k',
+            '🍫': 'konata',
+            '📚': 'kagami',
+            '🔌': 'lain'
         };
         return typeMap[emoji] || 'miku';
     }
