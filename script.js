@@ -2581,96 +2581,131 @@ function exportStatsJSON() {
 
     const json = JSON.stringify(exportData, null, 2);
 
+    // Save as file
+    const blob = new Blob([json], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.download = `kawaii-claw-stats-${new Date().toISOString().slice(0, 10)}.json`;
+    link.href = url;
+    link.click();
+    URL.revokeObjectURL(url);
+
+    // Also copy to clipboard
     navigator.clipboard.writeText(json).then(() => {
         const origText = btn.textContent;
-        btn.textContent = '✅ Copied!';
+        btn.textContent = '✅ Saved & Copied!';
         btn.classList.add('copied');
         setTimeout(() => {
             btn.textContent = origText;
             btn.classList.remove('copied');
         }, 1500);
     }).catch(() => {
-        // Fallback: open in a new window
-        const w = window.open('', '_blank');
-        if (w) {
-            w.document.write('<pre>' + json.replace(/</g, '&lt;') + '</pre>');
-        }
+        // Clipboard failed but file was still saved
+        const origText = btn.textContent;
+        btn.textContent = '✅ Saved!';
+        btn.classList.add('copied');
+        setTimeout(() => {
+            btn.textContent = origText;
+            btn.classList.remove('copied');
+        }, 1500);
     });
 }
 
 function importStatsJSON() {
     const btn = document.getElementById('stats-import-json-btn');
 
-    // Prompt user for JSON input
-    const raw = prompt('Paste your exported JSON below:');
-    if (raw === null || raw.trim() === '') return; // cancelled or empty
+    // Use a file picker instead of prompt() — prompt() is blocked on some hosts (e.g. GitHub Pages)
+    const fileInput = document.createElement('input');
+    fileInput.type = 'file';
+    fileInput.accept = '.json,application/json';
+    fileInput.style.display = 'none';
 
-    // Parse & validate
-    let data;
-    try {
-        data = JSON.parse(raw);
-    } catch (e) {
-        alert('❌ Invalid JSON — could not parse.\n\n' + e.message);
-        return;
-    }
+    fileInput.addEventListener('change', () => {
+        const file = fileInput.files[0];
+        if (!file) return;
 
-    // Accept either the full export shape { gameHistory: [...] } or a bare array [...]
-    let historyArr;
-    if (Array.isArray(data)) {
-        historyArr = data;
-    } else if (data && Array.isArray(data.gameHistory)) {
-        historyArr = data.gameHistory;
-    } else {
-        alert('❌ Invalid format — expected an exported stats JSON with a "gameHistory" array.');
-        return;
-    }
+        const reader = new FileReader();
+        reader.onload = () => {
+            const raw = reader.result;
 
-    // Basic validation of records
-    const validRecords = historyArr.filter(r =>
-        r && typeof r === 'object' &&
-        typeof r.score === 'number' &&
-        typeof r.tickets === 'number' &&
-        typeof r.plushiesCaught === 'number' &&
-        r.date
-    );
+            // Parse & validate
+            let data;
+            try {
+                data = JSON.parse(raw);
+            } catch (e) {
+                alert('❌ Invalid JSON — could not parse.\n\n' + e.message);
+                return;
+            }
 
-    if (validRecords.length === 0) {
-        alert('❌ No valid game records found in the JSON.');
-        return;
-    }
+            // Accept either the full export shape { gameHistory: [...] } or a bare array [...]
+            let historyArr;
+            if (Array.isArray(data)) {
+                historyArr = data;
+            } else if (data && Array.isArray(data.gameHistory)) {
+                historyArr = data.gameHistory;
+            } else {
+                alert('❌ Invalid format — expected an exported stats JSON with a "gameHistory" array.');
+                return;
+            }
 
-    const skipped = historyArr.length - validRecords.length;
-    const skippedNote = skipped > 0 ? `\n(${skipped} invalid record(s) will be skipped)` : '';
+            // Basic validation of records
+            const validRecords = historyArr.filter(r =>
+                r && typeof r === 'object' &&
+                typeof r.score === 'number' &&
+                typeof r.tickets === 'number' &&
+                typeof r.plushiesCaught === 'number' &&
+                r.date
+            );
 
-    // Confirm before replacing
-    const currentCount = GameHistory.getAll().length;
-    const ok = confirm(
-        `⚠️ This will REPLACE your current history (${currentCount} game${currentCount !== 1 ? 's' : ''}) ` +
-        `with ${validRecords.length} imported game${validRecords.length !== 1 ? 's' : ''}.${skippedNote}\n\n` +
-        `This cannot be undone! Continue?`
-    );
-    if (!ok) return;
+            if (validRecords.length === 0) {
+                alert('❌ No valid game records found in the JSON.');
+                return;
+            }
 
-    // Write to localStorage
-    const trimmed = validRecords.slice(0, MAX_HISTORY);
-    localStorage.setItem(HISTORY_KEY, JSON.stringify(trimmed));
+            const skipped = historyArr.length - validRecords.length;
+            const skippedNote = skipped > 0 ? `\n(${skipped} invalid record(s) will be skipped)` : '';
 
-    // Also restore plushiedex completion bonus if present
-    if (data && data.lifetimeStats && typeof data.lifetimeStats.plushiedexCompletionBonus === 'number' && data.lifetimeStats.plushiedexCompletionBonus > 0) {
-        GameHistory.awardPlushiedexCompletionBonus(data.lifetimeStats.plushiedexCompletionBonus);
-    }
+            // Confirm before replacing
+            const currentCount = GameHistory.getAll().length;
+            const ok = confirm(
+                `⚠️ This will REPLACE your current history (${currentCount} game${currentCount !== 1 ? 's' : ''}) ` +
+                `with ${validRecords.length} imported game${validRecords.length !== 1 ? 's' : ''}.${skippedNote}\n\n` +
+                `This cannot be undone! Continue?`
+            );
+            if (!ok) return;
 
-    // Refresh
-    renderStatsModal();
+            // Write to localStorage
+            const trimmed = validRecords.slice(0, MAX_HISTORY);
+            localStorage.setItem(HISTORY_KEY, JSON.stringify(trimmed));
 
-    // Success flash
-    const origText = btn.textContent;
-    btn.textContent = '✅ Imported!';
-    btn.classList.add('imported');
-    setTimeout(() => {
-        btn.textContent = origText;
-        btn.classList.remove('imported');
-    }, 1500);
+            // Also restore plushiedex completion bonus if present
+            if (data && data.lifetimeStats && typeof data.lifetimeStats.plushiedexCompletionBonus === 'number' && data.lifetimeStats.plushiedexCompletionBonus > 0) {
+                GameHistory.awardPlushiedexCompletionBonus(data.lifetimeStats.plushiedexCompletionBonus);
+            }
+
+            // Refresh
+            renderStatsModal();
+
+            // Success flash
+            const origText = btn.textContent;
+            btn.textContent = '✅ Imported!';
+            btn.classList.add('imported');
+            setTimeout(() => {
+                btn.textContent = origText;
+                btn.classList.remove('imported');
+            }, 1500);
+        };
+
+        reader.onerror = () => {
+            alert('❌ Failed to read file.');
+        };
+
+        reader.readAsText(file);
+    });
+
+    document.body.appendChild(fileInput);
+    fileInput.click();
+    fileInput.remove();
 }
 
 function clearGameHistory() {
