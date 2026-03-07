@@ -69,7 +69,7 @@ const CONFIG = {
 
 // Plushie Personalities — shown in detail overlay (collection & plushiedex)
 const PLUSHIE_PERSONALITIES = {
-    'miku':   'Miku is a diva <3 She is always positive, likes to cheer others up, a little bit air-headed but boi can she sing. SEEKAAA~~~~ (forgets lyrics)',
+    'miku':   'Miku is a diva <3 She is always positive, likes to cheer others up, a little bit air-headed but boi can she sing. SEEKAAA~~~~ (forgets lyrics) XD',
     'teto':   'She is a more mischievous vocaloid (fight me) than Miku. She always fights for recognition, loves to eat baguettes 🥖 and you can in general trust her. She is a little bit tsundere so be careful when you encounter Teto >_<',
     'melody': 'Personality pending!! >_<',
     'kuromi': 'Personality pending!! >_<',
