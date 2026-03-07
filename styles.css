@@ -697,6 +697,263 @@ h1 {
     }
 }
 
+/* ===== Plushiedex New Discovery Toast ===== */
+.plushiedex-new-toast {
+    position: absolute;
+    left: 50%;
+    bottom: 18px;
+    transform: translateX(-50%);
+    z-index: 9;
+    padding: 9px 20px;
+    border: 2px solid rgba(0, 255, 180, 0.7);
+    border-radius: 999px;
+    background: linear-gradient(135deg, rgba(0, 30, 20, 0.92), rgba(10, 0, 32, 0.94));
+    color: #00FFB4;
+    font-size: 0.92em;
+    font-weight: 900;
+    letter-spacing: 1px;
+    text-shadow: 0 0 10px rgba(0, 255, 180, 0.6);
+    box-shadow:
+        0 0 16px rgba(0, 255, 180, 0.45),
+        0 0 30px rgba(0, 200, 140, 0.2),
+        inset 0 0 12px rgba(0, 255, 180, 0.08);
+    animation: plushiedexToastPop 3s ease forwards;
+    pointer-events: none;
+    white-space: nowrap;
+}
+
+@keyframes plushiedexToastPop {
+    0% {
+        opacity: 0;
+        transform: translateX(-50%) translateY(14px) scale(0.85);
+    }
+    12% {
+        opacity: 1;
+        transform: translateX(-50%) translateY(0) scale(1.08);
+    }
+    22% {
+        transform: translateX(-50%) translateY(-2px) scale(1);
+    }
+    75% {
+        opacity: 1;
+        transform: translateX(-50%) translateY(-2px) scale(1);
+    }
+    100% {
+        opacity: 0;
+        transform: translateX(-50%) translateY(-14px) scale(0.96);
+    }
+}
+
+/* ===== Plushiedex NEW Badge (on plushie items) ===== */
+.plushiedex-new-badge {
+    display: inline-block;
+    font-size: 0.6em;
+    font-weight: 900;
+    letter-spacing: 0.5px;
+    color: #00FFB4;
+    background: rgba(0, 255, 180, 0.12);
+    border: 1.5px solid rgba(0, 255, 180, 0.5);
+    border-radius: 6px;
+    padding: 1px 6px;
+    margin-top: 2px;
+    text-shadow: 0 0 6px rgba(0, 255, 180, 0.5);
+    animation: newBadgePulse 2s ease-in-out infinite;
+}
+
+.report-new-badge {
+    font-size: 8px;
+}
+
+@keyframes newBadgePulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.7; }
+}
+
+/* Splash & Report: highlight border for new plushiedex entries */
+.splash-plushie-item.splash-new-dex {
+    border-color: rgba(0, 255, 180, 0.5);
+    box-shadow: 0 0 10px rgba(0, 255, 180, 0.3);
+}
+
+.report-plushie-item.report-new-dex {
+    border-color: rgba(0, 255, 180, 0.5);
+    box-shadow: 0 0 10px rgba(0, 255, 180, 0.3);
+}
+
+/* ===== New Plushiedex Entries Summary Section ===== */
+.new-dex-section {
+    margin-top: 14px;
+    margin-bottom: 8px;
+    padding: 12px 16px;
+    border: 2px solid rgba(0, 255, 180, 0.35);
+    border-radius: 12px;
+    background: linear-gradient(135deg, rgba(0, 40, 28, 0.5), rgba(10, 0, 32, 0.5));
+    text-align: center;
+}
+
+.new-dex-title {
+    font-size: 0.95em;
+    font-weight: 900;
+    color: #00FFB4;
+    letter-spacing: 1px;
+    text-shadow: 0 0 10px rgba(0, 255, 180, 0.5);
+    margin-bottom: 8px;
+}
+
+.new-dex-list {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    justify-content: center;
+    align-items: center;
+}
+
+.new-dex-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    padding: 4px 12px 4px 6px;
+    border: 1.5px solid rgba(0, 255, 180, 0.4);
+    border-radius: 999px;
+    background: rgba(0, 255, 180, 0.08);
+    color: #B0FFE0;
+    font-size: 0.82em;
+    font-weight: 700;
+    white-space: nowrap;
+}
+
+.new-dex-chip svg {
+    width: 28px;
+    height: 28px;
+    flex-shrink: 0;
+}
+
+.new-dex-chip-shiny {
+    border-color: rgba(255, 215, 0, 0.5);
+    background: rgba(255, 215, 0, 0.08);
+    color: #FFE8A0;
+}
+
+/* ===== Plushiedex Completion In-Game Toast ===== */
+.plushiedex-complete-toast {
+    position: absolute;
+    left: 50%;
+    bottom: 18px;
+    transform: translateX(-50%);
+    z-index: 10;
+    padding: 12px 24px;
+    border: 3px solid rgba(255, 215, 0, 0.8);
+    border-radius: 16px;
+    background: linear-gradient(135deg, rgba(30, 10, 0, 0.95), rgba(10, 0, 32, 0.95));
+    text-align: center;
+    box-shadow:
+        0 0 24px rgba(255, 215, 0, 0.6),
+        0 0 48px rgba(255, 105, 180, 0.25),
+        inset 0 0 16px rgba(255, 215, 0, 0.08);
+    animation: dexCompleteToastPop 7s ease forwards;
+    pointer-events: none;
+    white-space: nowrap;
+}
+
+.plushiedex-complete-toast-line {
+    font-size: 1.05em;
+    font-weight: 900;
+    letter-spacing: 1.5px;
+    color: #FFD700;
+    text-shadow: 0 0 14px rgba(255, 215, 0, 0.7);
+}
+
+.plushiedex-complete-toast-bonus {
+    font-size: 0.88em;
+    font-weight: 700;
+    color: #00FFB4;
+    text-shadow: 0 0 10px rgba(0, 255, 180, 0.5);
+    margin-top: 3px;
+}
+
+@keyframes dexCompleteToastPop {
+    0% {
+        opacity: 0;
+        transform: translateX(-50%) translateY(14px) scale(0.85);
+    }
+    8% {
+        opacity: 1;
+        transform: translateX(-50%) translateY(0) scale(1.1);
+    }
+    15% {
+        transform: translateX(-50%) translateY(-2px) scale(1);
+    }
+    80% {
+        opacity: 1;
+        transform: translateX(-50%) translateY(-2px) scale(1);
+    }
+    100% {
+        opacity: 0;
+        transform: translateX(-50%) translateY(-14px) scale(0.96);
+    }
+}
+
+/* ===== Plushiedex Completion Badge (Splash & Report) ===== */
+.dex-complete-badge {
+    margin-top: 14px;
+    margin-bottom: 8px;
+    padding: 16px 20px;
+    border: 3px solid #FFD700;
+    border-radius: 14px;
+    background: linear-gradient(135deg, rgba(50, 30, 0, 0.6), rgba(20, 0, 40, 0.6));
+    text-align: center;
+    box-shadow:
+        0 0 20px rgba(255, 215, 0, 0.4),
+        0 0 40px rgba(255, 105, 180, 0.15),
+        inset 0 0 14px rgba(255, 215, 0, 0.06);
+    animation: dexCompleteBadgePulse 3s ease-in-out infinite;
+}
+
+.dex-complete-icon {
+    font-size: 1.6em;
+    margin-bottom: 4px;
+}
+
+.dex-complete-title {
+    font-size: 1.15em;
+    font-weight: 900;
+    letter-spacing: 2px;
+    color: #FFD700;
+    text-shadow:
+        0 0 12px rgba(255, 215, 0, 0.7),
+        0 0 24px rgba(255, 215, 0, 0.4);
+}
+
+.dex-complete-subtitle {
+    font-size: 0.85em;
+    color: #FFB6E1;
+    font-weight: 600;
+    margin-top: 2px;
+}
+
+.dex-complete-bonus {
+    font-size: 1.1em;
+    font-weight: 900;
+    color: #00FFB4;
+    text-shadow: 0 0 10px rgba(0, 255, 180, 0.5);
+    margin-top: 6px;
+}
+
+@keyframes dexCompleteBadgePulse {
+    0%, 100% {
+        box-shadow:
+            0 0 20px rgba(255, 215, 0, 0.4),
+            0 0 40px rgba(255, 105, 180, 0.15),
+            inset 0 0 14px rgba(255, 215, 0, 0.06);
+    }
+    50% {
+        box-shadow:
+            0 0 30px rgba(255, 215, 0, 0.6),
+            0 0 50px rgba(255, 105, 180, 0.25),
+            inset 0 0 20px rgba(255, 215, 0, 0.1);
+    }
+}
+
 /* Shiny Prize SVG Animations */
 #prizes-svg-container .shiny-outer-aura {
     stroke: #FFD700;

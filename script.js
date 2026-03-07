@@ -16,7 +16,9 @@ const gameState = {
     bonusMessageClearTimeoutId: null,
     audioContext: null,
     soundEnabled: localStorage.getItem('kawaiiClawSoundEnabled') !== 'false',
-    lastMoveSoundAt: 0
+    lastMoveSoundAt: 0,
+    plushiedexKnownTypes: new Set(),
+    plushiedexKnownShinies: new Set()
 };
 
 // Configuration
@@ -53,6 +55,7 @@ const CONFIG = {
     PRIZE_EDGE_PADDING: 22,
     PRIZE_ROW_TOP_PADDING: 52,
     PRIZE_SPAWN_ATTEMPTS: 60,
+        PLUSHIEDEX_COMPLETION_BONUS_TICKETS: 10_000_000_000,
     PRIZE_TYPES: [
         { emoji: '🎵', name: 'Miku', points: 20 },
         { emoji: '🎶', name: 'Teto', points: 20 },
@@ -95,6 +98,7 @@ const KAOMOJIS = [
 
 // ===== Persistent Game History (localStorage) =====
 const HISTORY_KEY = 'kawaiiClawGameHistory';
+const PLUSHIEDEX_BONUS_KEY = 'kawaiiClawPlushiedexCompletionBonus';
 const MAX_HISTORY = 500;
 
 const GameHistory = {
@@ -113,19 +117,34 @@ const GameHistory = {
 
     getLifetimeStats() {
         const history = this.getAll();
+        const plushiedexBonus = this.getPlushiedexCompletionBonus();
         return {
             totalGames: history.length,
             lifetimeScore: history.reduce((s, r) => s + r.score, 0),
-            lifetimeTickets: history.reduce((s, r) => s + r.tickets, 0),
+            lifetimeTickets: history.reduce((s, r) => s + r.tickets, 0) + plushiedexBonus,
             totalPlushies: history.reduce((s, r) => s + r.plushiesCaught, 0),
             totalShinies: history.reduce((s, r) => s + r.shinyCaught, 0),
             perfectGames: history.filter(r => r.isPerfectGame).length,
             bestScore: history.length ? Math.max(...history.map(r => r.score)) : 0,
+            plushiedexCompletionBonus: plushiedexBonus,
         };
+    },
+
+    getPlushiedexCompletionBonus() {
+        return parseInt(localStorage.getItem(PLUSHIEDEX_BONUS_KEY)) || 0;
+    },
+
+    awardPlushiedexCompletionBonus(amount) {
+        localStorage.setItem(PLUSHIEDEX_BONUS_KEY, String(amount));
+    },
+
+    hasPlushiedexCompletionBonus() {
+        return !!localStorage.getItem(PLUSHIEDEX_BONUS_KEY);
     },
 
     clear() {
         localStorage.removeItem(HISTORY_KEY);
+        localStorage.removeItem(PLUSHIEDEX_BONUS_KEY);
     }
 };
 
@@ -318,6 +337,21 @@ function playSound(effect) {
             playTone(ctx, 330, now, 0.12, 'sawtooth', 0.028);
             playTone(ctx, 220, now + 0.1, 0.18, 'triangle', 0.024);
             break;
+        case 'plushiedexNew':
+            playTone(ctx, 660, now, 0.1, 'sine', 0.025);
+            playTone(ctx, 880, now + 0.08, 0.12, 'triangle', 0.025);
+            playTone(ctx, 1100, now + 0.16, 0.14, 'sine', 0.022);
+            playTone(ctx, 1320, now + 0.26, 0.18, 'sine', 0.018);
+            break;
+        case 'plushiedexComplete':
+            playTone(ctx, 523, now, 0.15, 'triangle', 0.03);
+            playTone(ctx, 659, now + 0.1, 0.15, 'triangle', 0.03);
+            playTone(ctx, 784, now + 0.2, 0.15, 'triangle', 0.03);
+            playTone(ctx, 1047, now + 0.3, 0.2, 'sine', 0.028);
+            playTone(ctx, 1319, now + 0.42, 0.22, 'sine', 0.025);
+            playTone(ctx, 1568, now + 0.56, 0.3, 'sine', 0.022);
+            playTone(ctx, 2093, now + 0.72, 0.4, 'sine', 0.018);
+            break;
     }
 }
 
@@ -390,8 +424,123 @@ function showShinyCatchBurst(bonusAmount) {
     }, 1200);
 }
 
+// ===== Plushiedex New-Discovery Detection =====
+
+function buildPlushiedexSnapshot() {
+    const history = GameHistory.getAll();
+    gameState.plushiedexKnownTypes = new Set();
+    gameState.plushiedexKnownShinies = new Set();
+    history.forEach(record => {
+        if (!record.prizes) return;
+        record.prizes.forEach(p => {
+            if (p.shiny) {
+                gameState.plushiedexKnownShinies.add(p.emoji);
+            } else {
+                gameState.plushiedexKnownTypes.add(p.emoji);
+            }
+        });
+    });
+}
+
+function isNewPlushiedexEntry(prize) {
+    if (prize.shiny) {
+        return !gameState.plushiedexKnownShinies.has(prize.emoji);
+    }
+    return !gameState.plushiedexKnownTypes.has(prize.emoji);
+}
+
+function markPlushiedexSeen(prize) {
+    if (prize.shiny) {
+        gameState.plushiedexKnownShinies.add(prize.emoji);
+    } else {
+        gameState.plushiedexKnownTypes.add(prize.emoji);
+    }
+}
+
+function showNewPlushiedexToast(prize) {
+    const stage = document.querySelector('.machine-stage');
+    if (!stage) return;
+
+    const variant = prize.shiny ? '✨ Shiny ' : '';
+    const toast = document.createElement('div');
+    toast.className = 'plushiedex-new-toast';
+    toast.innerHTML = `<span>📖 NEW! ${variant}${prize.name} added to Plushiedex!</span>`;
+    stage.appendChild(toast);
+
+    playSound('plushiedexNew');
+
+    setTimeout(() => {
+        toast.remove();
+    }, 3000);
+}
+
+function renderNewDexSection(container, newEntries) {
+    if (!container) return;
+    if (!newEntries || newEntries.length === 0) {
+        container.style.display = 'none';
+        return;
+    }
+    container.style.display = 'block';
+
+    const list = container.querySelector('.new-dex-list');
+    if (!list) return;
+    list.innerHTML = '';
+
+    newEntries.forEach(prize => {
+        const chip = document.createElement('span');
+        chip.className = 'new-dex-chip';
+        if (prize.shiny) chip.classList.add('new-dex-chip-shiny');
+
+        const svg = PlushieFactory.createPlushieSVG(
+            PlushieFactory.getPrizeType(prize.emoji),
+            28
+        );
+        chip.innerHTML = `${svg} <span>${prize.shiny ? '✨ ' : ''}${prize.name}</span>`;
+        list.appendChild(chip);
+    });
+}
+
+function isPlushiedexComplete() {
+    const totalTypes = CONFIG.PRIZE_TYPES.length;
+    return gameState.plushiedexKnownTypes.size >= totalTypes
+        && gameState.plushiedexKnownShinies.size >= totalTypes;
+}
+
+function checkAndAwardPlushiedexCompletion() {
+    // Only award once, ever
+    if (GameHistory.hasPlushiedexCompletionBonus()) return;
+    if (!isPlushiedexComplete()) return;
+
+    const bonus = CONFIG.PLUSHIEDEX_COMPLETION_BONUS_TICKETS;
+    GameHistory.awardPlushiedexCompletionBonus(bonus);
+    gameState.plushiedexCompletionAwarded = true;
+    showPlushiedexCompletionToast(bonus);
+}
+
+function showPlushiedexCompletionToast(bonus) {
+    const stage = document.querySelector('.machine-stage');
+    if (!stage) return;
+
+    const toast = document.createElement('div');
+    toast.className = 'plushiedex-complete-toast';
+    toast.innerHTML = `
+        <div class="plushiedex-complete-toast-line">📖🎊 PLUSHIEDEX COMPLETE! 🎊📖</div>
+        <div class="plushiedex-complete-toast-bonus">+${bonus.toLocaleString()} Lifetime Tickets!</div>
+    `;
+    stage.appendChild(toast);
+
+    playSound('plushiedexComplete');
+
+    setTimeout(() => {
+        toast.remove();
+    }, 7000);
+}
+
 // Initialize game
 function initGame() {
+
+    // Snapshot the plushiedex known entries BEFORE this game starts
+    buildPlushiedexSnapshot();
 
     gameState.score = 0;
     gameState.tickets = 0;
@@ -407,6 +556,7 @@ function initGame() {
     gameState.lastShinyCatchAt = 0;
     gameState.lastTokenBonus = 0;
     gameState.lastTokensLeft = 0;
+    gameState.plushiedexCompletionAwarded = false;
 
     clearBonusMessageTimers();
     const bonusEl = document.getElementById('bonus-message');
@@ -856,6 +1006,15 @@ function addCaughtPrize(prize) {
     container.appendChild(caughtEl);
     gameState.caughtPrizes.push(prize);
 
+    // Check for new Plushiedex discovery
+    if (isNewPlushiedexEntry(prize)) {
+        prize.newPlushiedexEntry = true;
+        markPlushiedexSeen(prize);
+        showNewPlushiedexToast(prize);
+        // Check if this completed the entire Plushiedex
+        checkAndAwardPlushiedexCompletion();
+    }
+
     if (prize.shiny) {
         setTimeout(() => {
             caughtEl.classList.remove('shiny-caught-pop');
@@ -912,7 +1071,7 @@ function endGame(isPerfect = false) {
         isPerfectGame: isPerfect,
         tokensLeft,
         tokenBonus,
-        prizes: gameState.caughtPrizes.map(p => ({ emoji: p.emoji, name: p.name, shiny: !!p.shiny })),
+        prizes: gameState.caughtPrizes.map(p => ({ emoji: p.emoji, name: p.name, shiny: !!p.shiny, newPlushiedexEntry: !!p.newPlushiedexEntry })),
     });
 
     let message;
@@ -970,6 +1129,7 @@ function showSplashScreen(isPerfect) {
             const item = document.createElement('div');
             item.className = 'splash-plushie-item';
             if (prize.shiny) item.classList.add('splash-shiny');
+            if (prize.newPlushiedexEntry) item.classList.add('splash-new-dex');
             item.style.animationDelay = `${i * 0.06}s`;
 
             const svg = PlushieFactory.createPlushieSVG(
@@ -977,12 +1137,31 @@ function showSplashScreen(isPerfect) {
                 60
             );
 
+            const newBadge = prize.newPlushiedexEntry ? '<span class="plushiedex-new-badge">📖 NEW</span>' : '';
+
             item.innerHTML = `
                 ${svg}
+                ${newBadge}
                 <div class="splash-plushie-name">${prize.shiny ? '✨ ' : ''}${prize.name}</div>
             `;
             grid.appendChild(item);
         });
+    }
+
+    // New Plushiedex entries summary
+    renderNewDexSection(
+        document.getElementById('splash-new-dex-section'),
+        gameState.caughtPrizes.filter(p => p.newPlushiedexEntry)
+    );
+
+    // Plushiedex completion bonus badge
+    const dexCompleteBadge = document.getElementById('splash-dex-complete');
+    if (gameState.plushiedexCompletionAwarded) {
+        dexCompleteBadge.style.display = 'block';
+        document.getElementById('splash-dex-complete-amount').textContent =
+            CONFIG.PLUSHIEDEX_COMPLETION_BONUS_TICKETS.toLocaleString();
+    } else {
+        dexCompleteBadge.style.display = 'none';
     }
 
     // Show/hide export button based on whether any plushies were caught
@@ -1142,19 +1321,31 @@ function generateReportCard() {
         if (prize.shiny) {
             plushieItem.classList.add('report-shiny-plushie');
         }
+        if (prize.newPlushiedexEntry) {
+            plushieItem.classList.add('report-new-dex');
+        }
 
         const plushieSVG = PlushieFactory.createPlushieSVG(
             PlushieFactory.getPrizeType(prize.emoji),
             70
         );
 
+        const newBadge = prize.newPlushiedexEntry ? '<span class="plushiedex-new-badge report-new-badge">📖 NEW</span>' : '';
+
         plushieItem.innerHTML = `
             ${plushieSVG}
+            ${newBadge}
             <div class="report-plushie-name">${prize.shiny ? '✨ ' : ''}${prize.name}</div>
         `;
 
         plushiesGrid.appendChild(plushieItem);
     });
+
+    // New Plushiedex entries summary
+    renderNewDexSection(
+        document.getElementById('report-new-dex-section'),
+        gameState.caughtPrizes.filter(p => p.newPlushiedexEntry)
+    );
 
     // Date
     const now = new Date();
@@ -1203,17 +1394,27 @@ function generateReportCardFromRecord(record) {
             const plushieItem = document.createElement('div');
             plushieItem.className = 'report-plushie-item';
             if (prize.shiny) plushieItem.classList.add('report-shiny-plushie');
+            if (prize.newPlushiedexEntry) plushieItem.classList.add('report-new-dex');
 
             const plushieSVG = PlushieFactory.createPlushieSVG(
                 PlushieFactory.getPrizeType(prize.emoji), 70
             );
+            const newBadge = prize.newPlushiedexEntry ? '<span class="plushiedex-new-badge report-new-badge">📖 NEW</span>' : '';
             plushieItem.innerHTML = `
                 ${plushieSVG}
+                ${newBadge}
                 <div class="report-plushie-name">${prize.shiny ? '✨ ' : ''}${prize.name}</div>
             `;
             plushiesGrid.appendChild(plushieItem);
         });
     }
+
+    // New Plushiedex entries summary
+    const newEntries = (record.prizes || []).filter(p => p.newPlushiedexEntry);
+    renderNewDexSection(
+        document.getElementById('report-new-dex-section'),
+        newEntries
+    );
 
     const d = new Date(record.date);
     document.getElementById('report-date').textContent = d.toLocaleDateString('en-US', {
