@@ -2598,6 +2598,81 @@ function exportStatsJSON() {
     });
 }
 
+function importStatsJSON() {
+    const btn = document.getElementById('stats-import-json-btn');
+
+    // Prompt user for JSON input
+    const raw = prompt('Paste your exported JSON below:');
+    if (raw === null || raw.trim() === '') return; // cancelled or empty
+
+    // Parse & validate
+    let data;
+    try {
+        data = JSON.parse(raw);
+    } catch (e) {
+        alert('❌ Invalid JSON — could not parse.\n\n' + e.message);
+        return;
+    }
+
+    // Accept either the full export shape { gameHistory: [...] } or a bare array [...]
+    let historyArr;
+    if (Array.isArray(data)) {
+        historyArr = data;
+    } else if (data && Array.isArray(data.gameHistory)) {
+        historyArr = data.gameHistory;
+    } else {
+        alert('❌ Invalid format — expected an exported stats JSON with a "gameHistory" array.');
+        return;
+    }
+
+    // Basic validation of records
+    const validRecords = historyArr.filter(r =>
+        r && typeof r === 'object' &&
+        typeof r.score === 'number' &&
+        typeof r.tickets === 'number' &&
+        typeof r.plushiesCaught === 'number' &&
+        r.date
+    );
+
+    if (validRecords.length === 0) {
+        alert('❌ No valid game records found in the JSON.');
+        return;
+    }
+
+    const skipped = historyArr.length - validRecords.length;
+    const skippedNote = skipped > 0 ? `\n(${skipped} invalid record(s) will be skipped)` : '';
+
+    // Confirm before replacing
+    const currentCount = GameHistory.getAll().length;
+    const ok = confirm(
+        `⚠️ This will REPLACE your current history (${currentCount} game${currentCount !== 1 ? 's' : ''}) ` +
+        `with ${validRecords.length} imported game${validRecords.length !== 1 ? 's' : ''}.${skippedNote}\n\n` +
+        `This cannot be undone! Continue?`
+    );
+    if (!ok) return;
+
+    // Write to localStorage
+    const trimmed = validRecords.slice(0, MAX_HISTORY);
+    localStorage.setItem(HISTORY_KEY, JSON.stringify(trimmed));
+
+    // Also restore plushiedex completion bonus if present
+    if (data && data.lifetimeStats && typeof data.lifetimeStats.plushiedexCompletionBonus === 'number' && data.lifetimeStats.plushiedexCompletionBonus > 0) {
+        GameHistory.awardPlushiedexCompletionBonus(data.lifetimeStats.plushiedexCompletionBonus);
+    }
+
+    // Refresh
+    renderStatsModal();
+
+    // Success flash
+    const origText = btn.textContent;
+    btn.textContent = '✅ Imported!';
+    btn.classList.add('imported');
+    setTimeout(() => {
+        btn.textContent = origText;
+        btn.classList.remove('imported');
+    }, 1500);
+}
+
 function clearGameHistory() {
     if (confirm('Clear all game history? This cannot be undone!')) {
         GameHistory.clear();
@@ -2632,6 +2707,7 @@ window.addEventListener('load', () => {
         document.getElementById('stats-clear-btn').addEventListener('click', clearGameHistory);
         document.getElementById('stats-export-pdf-btn').addEventListener('click', exportStatsPDF);
         document.getElementById('stats-export-json-btn').addEventListener('click', exportStatsJSON);
+        document.getElementById('stats-import-json-btn').addEventListener('click', importStatsJSON);
         document.getElementById('stats-overlay').addEventListener('click', (e) => {
             if (e.target.id === 'stats-overlay') closeStatsModal();
         });
