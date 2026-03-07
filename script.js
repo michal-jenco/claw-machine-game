@@ -1819,6 +1819,191 @@ function renderPlushiedex() {
     }
 }
 
+// ===== Modal Export (Collection & Plushiedex) =====
+
+/**
+ * Capture a modal card as a full-height canvas via html2canvas.
+ * Temporarily expands overflow so the entire content is captured,
+ * and hides buttons / close controls for a cleaner image.
+ */
+async function captureModalCard(cardSelector, scrollWrapSelector, bgColor) {
+    const card = document.querySelector(cardSelector);
+    const scrollWrap = card.querySelector(scrollWrapSelector);
+    const hideEls = card.querySelectorAll('.modal-export-row, .collection-close-btn, .plushiedex-close-btn');
+
+    // Save originals
+    const savedCard = { height: card.style.height, maxHeight: card.style.maxHeight, overflow: card.style.overflow };
+    const savedWrap = scrollWrap
+        ? { overflow: scrollWrap.style.overflow, maxHeight: scrollWrap.style.maxHeight, flex: scrollWrap.style.flex }
+        : null;
+
+    // Freeze all animations so html2canvas captures the final state, not mid-animation
+    const freezeStyle = document.createElement('style');
+    freezeStyle.textContent = `${cardSelector} *, ${cardSelector} { animation: none !important; transition: none !important; }`;
+    document.head.appendChild(freezeStyle);
+
+    // Expand to full content height
+    card.style.height = 'auto';
+    card.style.maxHeight = 'none';
+    card.style.overflow = 'visible';
+    if (scrollWrap) {
+        scrollWrap.style.overflow = 'visible';
+        scrollWrap.style.maxHeight = 'none';
+        scrollWrap.style.flex = 'none';
+    }
+    hideEls.forEach(el => el.style.display = 'none');
+
+    await wait(50);
+
+    const canvas = await html2canvas(card, {
+        backgroundColor: bgColor || '#0f0020',
+        scale: 2,
+        useCORS: true,
+        logging: false,
+    });
+
+    // Restore
+    freezeStyle.remove();
+    card.style.height = savedCard.height;
+    card.style.maxHeight = savedCard.maxHeight;
+    card.style.overflow = savedCard.overflow;
+    if (scrollWrap && savedWrap) {
+        scrollWrap.style.overflow = savedWrap.overflow;
+        scrollWrap.style.maxHeight = savedWrap.maxHeight;
+        scrollWrap.style.flex = savedWrap.flex;
+    }
+    hideEls.forEach(el => el.style.display = '');
+
+    return canvas;
+}
+
+/**
+ * Download a canvas as PNG.
+ */
+function downloadCanvasAsPNG(canvas, filename) {
+    canvas.toBlob(blob => {
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.download = filename;
+        link.href = url;
+        link.click();
+        URL.revokeObjectURL(url);
+    });
+}
+
+/**
+ * Render a full-height canvas across multiple PDF pages and save.
+ */
+function canvasToPDF(canvas, filename) {
+    const { jsPDF } = window.jspdf;
+    const doc = new jsPDF({ orientation: 'portrait', unit: 'pt', format: 'a4' });
+    const pageW = doc.internal.pageSize.getWidth();
+    const pageH = doc.internal.pageSize.getHeight();
+    const margin = 20;
+
+    const imgW = pageW - margin * 2;
+    const imgH = (canvas.height / canvas.width) * imgW;
+
+    const usableH = pageH - margin * 2;
+    const totalPages = Math.ceil(imgH / usableH);
+
+    // Slice the source canvas into page-sized chunks
+    for (let p = 0; p < totalPages; p++) {
+        if (p > 0) doc.addPage();
+
+        // Fill page background
+        doc.setFillColor(15, 0, 32);
+        doc.rect(0, 0, pageW, pageH, 'F');
+
+        // Calculate source slice
+        const srcY = p * (canvas.height / totalPages * 1); // we compute from usableH ratio
+        const srcSliceH = Math.min(canvas.height - (p * canvas.height * usableH / imgH), canvas.height * usableH / imgH);
+        const srcYActual = p * canvas.height * usableH / imgH;
+
+        // Create a temp canvas for this slice
+        const sliceCanvas = document.createElement('canvas');
+        sliceCanvas.width = canvas.width;
+        sliceCanvas.height = Math.round(srcSliceH);
+        const sliceCtx = sliceCanvas.getContext('2d');
+        sliceCtx.drawImage(canvas,
+            0, Math.round(srcYActual), canvas.width, Math.round(srcSliceH),
+            0, 0, canvas.width, Math.round(srcSliceH)
+        );
+
+        const sliceImgData = sliceCanvas.toDataURL('image/png');
+        const drawH = (srcSliceH / canvas.width) * imgW;
+        doc.addImage(sliceImgData, 'PNG', margin, margin, imgW, drawH);
+
+        // Page footer
+        doc.setFontSize(7);
+        doc.setTextColor(103, 232, 249);
+        doc.text(`Page ${p + 1} / ${totalPages}`, pageW / 2, pageH - 10, { align: 'center' });
+    }
+
+    doc.save(filename);
+}
+
+/**
+ * Generic modal export handler.
+ */
+async function exportModalImage(btn, cardSel, scrollWrapSel, namePrefix, format) {
+    const origText = btn.textContent;
+    btn.textContent = '⏳ Generating…';
+    btn.disabled = true;
+
+    try {
+        const canvas = await captureModalCard(cardSel, scrollWrapSel, '#0f0020');
+        const dateSuffix = new Date().toISOString().slice(0, 10);
+
+        if (format === 'png') {
+            downloadCanvasAsPNG(canvas, `${namePrefix}-${dateSuffix}.png`);
+        } else {
+            canvasToPDF(canvas, `${namePrefix}-${dateSuffix}.pdf`);
+        }
+
+        btn.textContent = '✅ Downloaded!';
+        setTimeout(() => { btn.textContent = origText; btn.disabled = false; }, 1500);
+    } catch (err) {
+        console.error(`Export ${format} failed:`, err);
+        btn.textContent = origText;
+        btn.disabled = false;
+    }
+}
+
+// Collection exports
+function exportCollectionPNG() {
+    exportModalImage(
+        document.getElementById('collection-export-png-btn'),
+        '.collection-card', '.collection-grid-wrap',
+        'kawaii-collection', 'png'
+    );
+}
+
+function exportCollectionPDF() {
+    exportModalImage(
+        document.getElementById('collection-export-pdf-btn'),
+        '.collection-card', '.collection-grid-wrap',
+        'kawaii-collection', 'pdf'
+    );
+}
+
+// Plushiedex exports
+function exportPlushiedexPNG() {
+    exportModalImage(
+        document.getElementById('plushiedex-export-png-btn'),
+        '.plushiedex-card', '.plushiedex-roster-wrap',
+        'kawaii-plushiedex', 'png'
+    );
+}
+
+function exportPlushiedexPDF() {
+    exportModalImage(
+        document.getElementById('plushiedex-export-pdf-btn'),
+        '.plushiedex-card', '.plushiedex-roster-wrap',
+        'kawaii-plushiedex', 'pdf'
+    );
+}
+
 // ===== Plushie Detail Overlay =====
 
 function openPlushieDetail(entry) {
@@ -2753,6 +2938,8 @@ window.addEventListener('load', () => {
         // Collection modal
         document.getElementById('collection-btn').addEventListener('click', openCollectionModal);
         document.getElementById('collection-close-btn').addEventListener('click', closeCollectionModal);
+        document.getElementById('collection-export-png-btn').addEventListener('click', exportCollectionPNG);
+        document.getElementById('collection-export-pdf-btn').addEventListener('click', exportCollectionPDF);
         document.getElementById('collection-overlay').addEventListener('click', (e) => {
             if (e.target.id === 'collection-overlay') closeCollectionModal();
         });
@@ -2760,6 +2947,8 @@ window.addEventListener('load', () => {
         // Plushiedex overlay
         document.getElementById('plushiedex-btn').addEventListener('click', openPlushiedex);
         document.getElementById('plushiedex-close-btn').addEventListener('click', closePlushiedex);
+        document.getElementById('plushiedex-export-png-btn').addEventListener('click', exportPlushiedexPNG);
+        document.getElementById('plushiedex-export-pdf-btn').addEventListener('click', exportPlushiedexPDF);
         document.getElementById('plushiedex-overlay').addEventListener('click', (e) => {
             if (e.target.id === 'plushiedex-overlay') closePlushiedex();
         });

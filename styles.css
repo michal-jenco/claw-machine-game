@@ -2109,6 +2109,41 @@ h1 {
     transform: none;
 }
 
+/* ===== Modal Export Buttons (shared by Collection & Plushiedex) ===== */
+.modal-export-row {
+    display: flex;
+    gap: 10px;
+    justify-content: center;
+    flex-wrap: wrap;
+    margin-top: 12px;
+    flex-shrink: 0;
+}
+
+.modal-export-btn {
+    background: transparent;
+    border: 1.5px solid rgba(0, 255, 255, 0.3);
+    color: rgba(0, 255, 255, 0.7);
+    font-size: 0.8em;
+    font-weight: bold;
+    padding: 7px 16px;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.2s;
+    letter-spacing: 0.5px;
+}
+
+.modal-export-btn:hover {
+    border-color: #00FFFF;
+    color: #00FFFF;
+    background: rgba(0, 255, 255, 0.1);
+    box-shadow: 0 0 12px rgba(0, 255, 255, 0.25);
+}
+
+.modal-export-btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
 /* ===== Collection Modal ===== */
 .collection-overlay {
     position: fixed;
