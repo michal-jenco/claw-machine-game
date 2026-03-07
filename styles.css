@@ -853,6 +853,13 @@ h1 {
     font-size: 0.82em;
     font-weight: 700;
     white-space: nowrap;
+    transition: transform 0.15s, border-color 0.15s, box-shadow 0.15s;
+}
+
+.new-dex-chip:hover {
+    transform: scale(1.08);
+    border-color: rgba(0, 255, 180, 0.8);
+    box-shadow: 0 0 10px rgba(0, 255, 180, 0.3);
 }
 
 .new-dex-chip svg {

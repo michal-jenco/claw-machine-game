@@ -619,6 +619,14 @@ function renderNewDexSection(container, newEntries) {
             28
         );
         chip.innerHTML = `${svg} <span>${prize.shiny ? '✨ ' : ''}${prize.name}</span>`;
+
+        chip.style.cursor = 'pointer';
+        chip.addEventListener('click', () => openPlushieDetail({
+            emoji: prize.emoji,
+            name: prize.name,
+            shiny: !!prize.shiny
+        }));
+
         list.appendChild(chip);
     });
 }
