@@ -1694,6 +1694,280 @@ function closePlushieDetail() {
     document.getElementById('plushie-detail-overlay').style.display = 'none';
 }
 
+function exportPlushieAsPNG() {
+    const card = document.querySelector('.plushie-detail-card');
+    const svgEl = document.querySelector('#plushie-detail-svg svg');
+    const name = document.getElementById('plushie-detail-name').textContent;
+    const personality = document.getElementById('plushie-detail-personality').textContent;
+    const isShiny = card.classList.contains('plushie-detail-shiny');
+    const badges = Array.from(document.querySelectorAll('#plushie-detail-badges .plushie-detail-badge'))
+        .map(b => b.textContent.trim());
+    const stats = Array.from(document.querySelectorAll('#plushie-detail-stats .plushie-detail-stat'))
+        .map(s => {
+            const label = s.querySelector('.plushie-detail-stat-label').textContent;
+            const value = s.querySelector('.plushie-detail-stat-value').textContent;
+            return { label, value };
+        });
+
+    const scale = 2;
+    const W = 460 * scale;
+    const pad = 30 * scale;       // horizontal padding
+    const contentW = W - pad * 2; // usable content width
+
+    // --- Pre-calculate heights with a temporary canvas for text measurement ---
+    const tmpCanvas = document.createElement('canvas');
+    tmpCanvas.width = W;
+    tmpCanvas.height = 100;
+    const tmp = tmpCanvas.getContext('2d');
+
+    // Plushie image
+    const imgSize = 200 * scale;
+    const imgTopPad = 36 * scale;
+
+    // Name
+    const nameSize = 22 * scale;
+    const nameGap = 14 * scale;
+
+    // Badges — measure and compute rows
+    const badgeFontSize = 10 * scale;
+    tmp.font = `900 ${badgeFontSize}px 'Courier New', monospace`;
+    const badgePadX = 14 * scale;
+    const badgeH = 24 * scale;
+    const badgeGapX = 8 * scale;
+    const badgeGapY = 8 * scale;
+
+    const badgeMeasured = badges.map(b => ({
+        text: b,
+        width: tmp.measureText(b).width + badgePadX * 2
+    }));
+
+    // Lay badges into rows
+    const badgeRows = [];
+    let currentRow = [];
+    let currentRowW = 0;
+    badgeMeasured.forEach(b => {
+        const needed = b.width + (currentRow.length > 0 ? badgeGapX : 0);
+        if (currentRow.length > 0 && currentRowW + needed > contentW) {
+            badgeRows.push(currentRow);
+            currentRow = [b];
+            currentRowW = b.width;
+        } else {
+            currentRow.push(b);
+            currentRowW += needed;
+        }
+    });
+    if (currentRow.length) badgeRows.push(currentRow);
+    const badgesBlockH = badgeRows.length * (badgeH + badgeGapY);
+    const badgesGap = 14 * scale;
+
+    // Personality — wrap lines
+    const pFontSize = 11 * scale;
+    const pLineH = 18 * scale;
+    const pPadY = 12 * scale;
+    tmp.font = `italic ${pFontSize}px sans-serif`;
+    const personalityLines = wrapText(tmp, personality, contentW - 24 * scale);
+    const pBlockH = personalityLines.length * pLineH + pPadY * 2;
+    const pGap = 14 * scale;
+
+    // Stats
+    const statRowH = 26 * scale;
+    const statPadY = 12 * scale;
+    const statBlockH = stats.length * statRowH + statPadY * 2;
+    const statGap = 14 * scale;
+
+    // Watermark
+    const watermarkH = 28 * scale;
+
+    // Total height
+    const H = imgTopPad + imgSize + nameGap + nameSize + nameGap
+        + badgesBlockH + badgesGap
+        + pBlockH + pGap
+        + statBlockH + statGap
+        + watermarkH;
+
+    // --- Create final canvas ---
+    const canvas = document.createElement('canvas');
+    canvas.width = W;
+    canvas.height = H;
+    const ctx = canvas.getContext('2d');
+
+    // --- Background ---
+    const grad = ctx.createLinearGradient(0, 0, W, H);
+    grad.addColorStop(0, '#0f0020');
+    grad.addColorStop(0.5, '#1a0033');
+    grad.addColorStop(1, '#150028');
+    ctx.fillStyle = grad;
+    roundRect(ctx, 0, 0, W, H, 28 * scale);
+    ctx.fill();
+
+    // Clip to rounded rect so nothing bleeds
+    ctx.save();
+    roundRect(ctx, 0, 0, W, H, 28 * scale);
+    ctx.clip();
+
+    // Border
+    ctx.strokeStyle = isShiny ? '#FFD700' : '#FF1493';
+    ctx.lineWidth = 4 * scale;
+    roundRect(ctx, 2 * scale, 2 * scale, W - 4 * scale, H - 4 * scale, 26 * scale);
+    ctx.stroke();
+
+    // Spotlight glow
+    const spotGrad = ctx.createRadialGradient(W / 2, imgTopPad + imgSize * 0.4, 0, W / 2, imgTopPad + imgSize * 0.4, imgSize * 0.8);
+    if (isShiny) {
+        spotGrad.addColorStop(0, 'rgba(255,215,0,0.14)');
+        spotGrad.addColorStop(0.6, 'rgba(255,215,0,0.03)');
+    } else {
+        spotGrad.addColorStop(0, 'rgba(255,20,147,0.10)');
+        spotGrad.addColorStop(0.6, 'rgba(255,20,147,0.02)');
+    }
+    spotGrad.addColorStop(1, 'transparent');
+    ctx.fillStyle = spotGrad;
+    ctx.fillRect(0, 0, W, H);
+
+    // --- Render SVG to image, then draw everything else ---
+    const svgData = new XMLSerializer().serializeToString(svgEl);
+    const svgBlob = new Blob([svgData], { type: 'image/svg+xml;charset=utf-8' });
+    const url = URL.createObjectURL(svgBlob);
+    const img = new Image();
+
+    img.onload = () => {
+        // Draw plushie SVG centered
+        const imgX = (W - imgSize) / 2;
+        const imgY = imgTopPad;
+        ctx.drawImage(img, imgX, imgY, imgSize, imgSize);
+        URL.revokeObjectURL(url);
+
+        let curY = imgY + imgSize + nameGap;
+
+        // --- Name ---
+        ctx.font = `900 ${nameSize}px 'Courier New', monospace`;
+        ctx.fillStyle = isShiny ? '#FFD700' : '#FF1493';
+        ctx.textAlign = 'center';
+        ctx.shadowColor = isShiny ? 'rgba(255,215,0,0.5)' : 'rgba(255,20,147,0.5)';
+        ctx.shadowBlur = 12 * scale;
+        ctx.fillText(name, W / 2, curY + nameSize * 0.8);
+        ctx.shadowBlur = 0;
+        curY += nameSize + nameGap;
+
+        // --- Badges (row-wrapped, centered) ---
+        ctx.font = `900 ${badgeFontSize}px 'Courier New', monospace`;
+        ctx.textBaseline = 'middle';
+        badgeRows.forEach(row => {
+            const rowW = row.reduce((s, b) => s + b.width, 0) + (row.length - 1) * badgeGapX;
+            let bx = (W - rowW) / 2;
+            row.forEach(badge => {
+                const isShinyBadge = badge.text.includes('Shiny');
+                // Badge background
+                ctx.fillStyle = isShinyBadge ? 'rgba(255,215,0,0.15)' : 'rgba(255,20,147,0.15)';
+                ctx.strokeStyle = isShinyBadge ? 'rgba(255,215,0,0.5)' : 'rgba(255,20,147,0.4)';
+                ctx.lineWidth = 1.5 * scale;
+                roundRect(ctx, bx, curY, badge.width, badgeH, 12 * scale);
+                ctx.fill();
+                ctx.stroke();
+                // Badge text
+                ctx.fillStyle = isShinyBadge ? '#FFD700' : '#FFB6E1';
+                ctx.textAlign = 'center';
+                ctx.fillText(badge.text, bx + badge.width / 2, curY + badgeH / 2 + 1 * scale);
+                bx += badge.width + badgeGapX;
+            });
+            curY += badgeH + badgeGapY;
+        });
+        ctx.textBaseline = 'alphabetic';
+        curY += badgesGap - badgeGapY; // remove last row gap, add section gap
+
+        // --- Personality ---
+        ctx.fillStyle = isShiny ? 'rgba(255,215,0,0.08)' : 'rgba(255,20,147,0.08)';
+        ctx.strokeStyle = isShiny ? 'rgba(255,215,0,0.2)' : 'rgba(255,20,147,0.2)';
+        ctx.lineWidth = 1.5 * scale;
+        roundRect(ctx, pad, curY, contentW, pBlockH, 12 * scale);
+        ctx.fill();
+        ctx.stroke();
+
+        ctx.font = `italic ${pFontSize}px sans-serif`;
+        ctx.fillStyle = isShiny ? '#FFD700' : '#FFB6E1';
+        ctx.textAlign = 'center';
+        personalityLines.forEach((line, i) => {
+            ctx.fillText(line, W / 2, curY + pPadY + pLineH * 0.7 + i * pLineH);
+        });
+        curY += pBlockH + pGap;
+
+        // --- Stats ---
+        ctx.fillStyle = 'rgba(0,0,0,0.25)';
+        ctx.strokeStyle = 'rgba(0,255,255,0.12)';
+        ctx.lineWidth = 1.5 * scale;
+        roundRect(ctx, pad, curY, contentW, statBlockH, 12 * scale);
+        ctx.fill();
+        ctx.stroke();
+
+        stats.forEach((s, i) => {
+            const sy = curY + statPadY + statRowH * 0.65 + i * statRowH;
+            ctx.textAlign = 'left';
+            ctx.font = `bold ${9 * scale}px 'Courier New', monospace`;
+            ctx.fillStyle = 'rgba(0,255,255,0.8)';
+            ctx.fillText(s.label.toUpperCase(), pad + 14 * scale, sy);
+            ctx.textAlign = 'right';
+            ctx.font = `900 ${12 * scale}px 'Courier New', monospace`;
+            ctx.fillStyle = '#FFD700';
+            ctx.fillText(s.value, W - pad - 14 * scale, sy);
+        });
+        curY += statBlockH + statGap;
+
+        // --- Watermark ---
+        ctx.textAlign = 'center';
+        ctx.font = `${8 * scale}px sans-serif`;
+        ctx.fillStyle = 'rgba(255,255,255,0.2)';
+        ctx.fillText('✨ Kawaii Claw Machine ✨', W / 2, curY + 8 * scale);
+
+        ctx.restore(); // release clip
+
+        // --- Download ---
+        const link = document.createElement('a');
+        link.download = `${name.replace(/\s+/g, '_')}${isShiny ? '_shiny' : ''}_plushie.png`;
+        link.href = canvas.toDataURL('image/png');
+        link.click();
+    };
+
+    img.onerror = () => {
+        URL.revokeObjectURL(url);
+        alert('Could not export plushie. Please try again!');
+    };
+
+    img.src = url;
+}
+
+// Helper: rounded rectangle path
+function roundRect(ctx, x, y, w, h, r) {
+    ctx.beginPath();
+    ctx.moveTo(x + r, y);
+    ctx.lineTo(x + w - r, y);
+    ctx.quadraticCurveTo(x + w, y, x + w, y + r);
+    ctx.lineTo(x + w, y + h - r);
+    ctx.quadraticCurveTo(x + w, y + h, x + w - r, y + h);
+    ctx.lineTo(x + r, y + h);
+    ctx.quadraticCurveTo(x, y + h, x, y + h - r);
+    ctx.lineTo(x, y + r);
+    ctx.quadraticCurveTo(x, y, x + r, y);
+    ctx.closePath();
+}
+
+// Helper: wrap text into lines
+function wrapText(ctx, text, maxWidth) {
+    const words = text.split(' ');
+    const lines = [];
+    let line = '';
+    for (const word of words) {
+        const test = line ? line + ' ' + word : word;
+        if (ctx.measureText(test).width > maxWidth) {
+            if (line) lines.push(line);
+            line = word;
+        } else {
+            line = test;
+        }
+    }
+    if (line) lines.push(line);
+    return lines;
+}
+
 function openStatsModal() {
     const overlay = document.getElementById('stats-overlay');
     renderStatsModal();
@@ -1839,6 +2113,7 @@ window.addEventListener('load', () => {
 
         // Plushie detail overlay
         document.getElementById('plushie-detail-close-btn').addEventListener('click', closePlushieDetail);
+        document.getElementById('plushie-detail-export-btn').addEventListener('click', exportPlushieAsPNG);
         document.getElementById('plushie-detail-overlay').addEventListener('click', (e) => {
             if (e.target.id === 'plushie-detail-overlay') closePlushieDetail();
         });
