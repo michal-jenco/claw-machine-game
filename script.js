@@ -1370,6 +1370,14 @@ function showSplashScreen(isPerfect) {
                 <div class="splash-plushie-name">${prize.shiny ? '✨ ' : ''}${prize.name}</div>
                 <div class="splash-plushie-source">${splashSource}</div>
             `;
+
+            item.style.cursor = 'pointer';
+            item.addEventListener('click', () => openPlushieDetail({
+                emoji: prize.emoji,
+                name: prize.name,
+                shiny: !!prize.shiny
+            }));
+
             grid.appendChild(item);
         });
     }
@@ -2352,10 +2360,21 @@ function openPlushieDetail(entry) {
     }
 
     // Stats
+    const count = entry.count || (() => {
+        let c = 0;
+        GameHistory.getAll().forEach(record => {
+            if (!record.prizes) return;
+            record.prizes.forEach(p => {
+                if (p.emoji === entry.emoji && p.name === entry.name && !!p.shiny === !!entry.shiny) c++;
+            });
+        });
+        return c;
+    })();
+
     let statsHTML = `
         <div class="plushie-detail-stat">
             <span class="plushie-detail-stat-label">Times Caught</span>
-            <span class="plushie-detail-stat-value">${entry.count.toLocaleString()}</span>
+            <span class="plushie-detail-stat-value">${count.toLocaleString()}</span>
         </div>
     `;
 
