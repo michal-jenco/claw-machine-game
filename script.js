@@ -1291,6 +1291,13 @@ function wait(ms) {
     return new Promise(resolve => setTimeout(resolve, ms));
 }
 
+/** Return a filename-safe timestamp like "2026-03-07_14-30-45" */
+function fileTimestamp(date) {
+    const d = date || new Date();
+    const pad = n => String(n).padStart(2, '0');
+    return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}_${pad(d.getHours())}-${pad(d.getMinutes())}-${pad(d.getSeconds())}`;
+}
+
 // Generate Report Card (mirrors splash screen content for PNG export)
 function generateReportCard() {
     // Title
@@ -1485,7 +1492,7 @@ async function exportHistoryReportCard(historyIndex, btnEl) {
         canvas.toBlob(blob => {
             const url = URL.createObjectURL(blob);
             const link = document.createElement('a');
-            const timestamp = new Date(record.date).getTime();
+            const timestamp = fileTimestamp(new Date(record.date));
             link.download = `kawaii-plushie-report-${timestamp}.png`;
             link.href = url;
             link.click();
@@ -1545,7 +1552,7 @@ async function exportReportCard(triggerBtn) {
         canvas.toBlob(blob => {
             const url = URL.createObjectURL(blob);
             const link = document.createElement('a');
-            const timestamp = new Date().getTime();
+            const timestamp = fileTimestamp();
             link.download = `kawaii-plushie-report-${timestamp}.png`;
             link.href = url;
             link.click();
@@ -1953,7 +1960,7 @@ async function exportModalImage(btn, cardSel, scrollWrapSel, namePrefix, format)
 
     try {
         const canvas = await captureModalCard(cardSel, scrollWrapSel, '#0f0020');
-        const dateSuffix = new Date().toISOString().slice(0, 10);
+        const dateSuffix = fileTimestamp();
 
         if (format === 'png') {
             downloadCanvasAsPNG(canvas, `${namePrefix}-${dateSuffix}.png`);
@@ -2337,7 +2344,7 @@ function exportPlushieAsPNG() {
 
         // --- Download ---
         const link = document.createElement('a');
-        link.download = `${name.replace(/\s+/g, '_')}${isShiny ? '_shiny' : ''}_plushie.png`;
+        link.download = `${name.replace(/\s+/g, '_')}${isShiny ? '_shiny' : ''}_plushie_${fileTimestamp()}.png`;
         link.href = canvas.toDataURL('image/png');
         link.click();
     };
@@ -2741,7 +2748,7 @@ function exportStatsPDF() {
         doc.text(`Exported: ${exportDate}`, pageW - margin, pageH - 40, { align: 'right' });
 
         // ─── Save ───
-        doc.save(`kawaii-claw-stats-${new Date().toISOString().slice(0, 10)}.pdf`);
+        doc.save(`kawaii-claw-stats-${fileTimestamp()}.pdf`);
 
         btn.textContent = origText;
         btn.disabled = false;
@@ -2770,7 +2777,7 @@ function exportStatsJSON() {
     const blob = new Blob([json], { type: 'application/json' });
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
-    link.download = `kawaii-claw-stats-${new Date().toISOString().slice(0, 10)}.json`;
+    link.download = `kawaii-claw-stats-${fileTimestamp()}.json`;
     link.href = url;
     link.click();
     URL.revokeObjectURL(url);
