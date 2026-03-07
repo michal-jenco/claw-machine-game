@@ -55,7 +55,7 @@ const CONFIG = {
     PRIZE_EDGE_PADDING: 22,
     PRIZE_ROW_TOP_PADDING: 52,
     PRIZE_SPAWN_ATTEMPTS: 60,
-        PLUSHIEDEX_COMPLETION_BONUS_TICKETS: 10_000_000_000,
+    PLUSHIEDEX_COMPLETION_BONUS_TICKETS: 10_000_000_000,
     PRIZE_TYPES: [
         { emoji: '🎵', name: 'Miku', points: 20 },
         { emoji: '🎶', name: 'Teto', points: 20 },
@@ -461,9 +461,13 @@ function showNewPlushiedexToast(prize) {
     const stage = document.querySelector('.machine-stage');
     if (!stage) return;
 
+    const existingToasts = stage.querySelectorAll('.plushiedex-new-toast');
+    const offsetTop = 52 + existingToasts.length * 40;
+
     const variant = prize.shiny ? '✨ Shiny ' : '';
     const toast = document.createElement('div');
     toast.className = 'plushiedex-new-toast';
+    toast.style.top = `${offsetTop}px`;
     toast.innerHTML = `<span>📖 NEW! ${variant}${prize.name} added to Plushiedex!</span>`;
     stage.appendChild(toast);
 
@@ -1007,7 +1011,11 @@ function addCaughtPrize(prize) {
     gameState.caughtPrizes.push(prize);
 
     // Check for new Plushiedex discovery
-    if (isNewPlushiedexEntry(prize)) {
+    const isNew = isNewPlushiedexEntry(prize);
+    console.log('[PLUSHIEDEX]', prize.name, 'shiny=', prize.shiny, 'isNew=', isNew,
+        'knownTypes=', [...gameState.plushiedexKnownTypes],
+        'knownShinies=', [...gameState.plushiedexKnownShinies]);
+    if (isNew) {
         prize.newPlushiedexEntry = true;
         markPlushiedexSeen(prize);
         showNewPlushiedexToast(prize);
@@ -1072,6 +1080,7 @@ function endGame(isPerfect = false) {
         tokensLeft,
         tokenBonus,
         prizes: gameState.caughtPrizes.map(p => ({ emoji: p.emoji, name: p.name, shiny: !!p.shiny, newPlushiedexEntry: !!p.newPlushiedexEntry })),
+        plushiedexCompleted: !!gameState.plushiedexCompletionAwarded,
     });
 
     let message;
@@ -1347,6 +1356,16 @@ function generateReportCard() {
         gameState.caughtPrizes.filter(p => p.newPlushiedexEntry)
     );
 
+    // Plushiedex completion bonus badge
+    const reportDexComplete = document.getElementById('report-dex-complete');
+    if (gameState.plushiedexCompletionAwarded) {
+        reportDexComplete.style.display = 'block';
+        document.getElementById('report-dex-complete-amount').textContent =
+            CONFIG.PLUSHIEDEX_COMPLETION_BONUS_TICKETS.toLocaleString();
+    } else {
+        reportDexComplete.style.display = 'none';
+    }
+
     // Date
     const now = new Date();
     const dateStr = now.toLocaleDateString('en-US', {
@@ -1415,6 +1434,16 @@ function generateReportCardFromRecord(record) {
         document.getElementById('report-new-dex-section'),
         newEntries
     );
+
+    // Plushiedex completion bonus badge
+    const reportDexComplete = document.getElementById('report-dex-complete');
+    if (record.plushiedexCompleted) {
+        reportDexComplete.style.display = 'block';
+        document.getElementById('report-dex-complete-amount').textContent =
+            CONFIG.PLUSHIEDEX_COMPLETION_BONUS_TICKETS.toLocaleString();
+    } else {
+        reportDexComplete.style.display = 'none';
+    }
 
     const d = new Date(record.date);
     document.getElementById('report-date').textContent = d.toLocaleDateString('en-US', {
@@ -2265,6 +2294,8 @@ function clearGameHistory() {
     if (confirm('Clear all game history? This cannot be undone!')) {
         GameHistory.clear();
         renderStatsModal();
+        closeStatsModal();
+        initGame();
     }
 }
 

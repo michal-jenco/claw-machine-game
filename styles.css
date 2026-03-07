@@ -701,7 +701,7 @@ h1 {
 .plushiedex-new-toast {
     position: absolute;
     left: 50%;
-    bottom: 18px;
+    top: 52px; /* default, overridden by JS for stacking */
     transform: translateX(-50%);
     z-index: 9;
     padding: 9px 20px;
@@ -725,22 +725,22 @@ h1 {
 @keyframes plushiedexToastPop {
     0% {
         opacity: 0;
-        transform: translateX(-50%) translateY(14px) scale(0.85);
+        transform: translateX(-50%) translateY(-18px) scale(0.85);
     }
     12% {
         opacity: 1;
         transform: translateX(-50%) translateY(0) scale(1.08);
     }
     22% {
-        transform: translateX(-50%) translateY(-2px) scale(1);
+        transform: translateX(-50%) translateY(4px) scale(1);
     }
     75% {
         opacity: 1;
-        transform: translateX(-50%) translateY(-2px) scale(1);
+        transform: translateX(-50%) translateY(4px) scale(1);
     }
     100% {
         opacity: 0;
-        transform: translateX(-50%) translateY(-14px) scale(0.96);
+        transform: translateX(-50%) translateY(18px) scale(0.96);
     }
 }
 
@@ -838,7 +838,7 @@ h1 {
 .plushiedex-complete-toast {
     position: absolute;
     left: 50%;
-    bottom: 18px;
+    top: 52px;
     transform: translateX(-50%);
     z-index: 10;
     padding: 12px 24px;
@@ -874,22 +874,22 @@ h1 {
 @keyframes dexCompleteToastPop {
     0% {
         opacity: 0;
-        transform: translateX(-50%) translateY(14px) scale(0.85);
+        transform: translateX(-50%) translateY(-18px) scale(0.85);
     }
     8% {
         opacity: 1;
         transform: translateX(-50%) translateY(0) scale(1.1);
     }
     15% {
-        transform: translateX(-50%) translateY(-2px) scale(1);
+        transform: translateX(-50%) translateY(4px) scale(1);
     }
     80% {
         opacity: 1;
-        transform: translateX(-50%) translateY(-2px) scale(1);
+        transform: translateX(-50%) translateY(4px) scale(1);
     }
     100% {
         opacity: 0;
-        transform: translateX(-50%) translateY(-14px) scale(0.96);
+        transform: translateX(-50%) translateY(18px) scale(0.96);
     }
 }
 
